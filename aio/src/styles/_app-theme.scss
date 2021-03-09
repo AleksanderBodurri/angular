@@ -4,6 +4,6 @@
 
 @mixin app-theme($theme) {
     @include typography-theme($theme);
-    @include layout-theme($theme);
+    @include layout-themes($theme);
     @include module-themes($theme);
 }

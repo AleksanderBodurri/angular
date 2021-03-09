@@ -9,6 +9,6 @@
 
     body,
     .content {
-        background-color: mat-color($background, background);
+        background-color: if($is-dark-theme, mat-color($background, background), $white);
     }
 }
