@@ -1,0 +1,84 @@
+@use '../../constants' as *;
+@use '~@angular/material/theming' as *;
+
+@mixin toc-theme($theme) {
+    $primary: map-get($theme, primary);
+    $background: map-get($theme, background);
+    $foreground: map-get($theme, foreground);
+    $is-dark-theme: map-get($theme, is-dark);
+
+    aio-toc {
+        .toc-inner {
+            .toc-heading {
+                &.secondary {
+                    &:hover {
+                        color: $accentblue;
+                    }
+                }
+            }
+
+            button {
+                &.toc-heading,
+                &.toc-more-items {
+                    &.embedded:focus {
+                        background: $lightgray;
+                    }
+                }
+
+                &.toc-heading {
+                    &:hover:not(.embedded) {
+                        color: $accentblue;
+                    }
+                }
+
+                &.toc-more-items {
+                    color: $mediumgray;
+
+                    &:hover {
+                        color: $accentblue;
+                    }
+                }
+            }
+
+            ul.toc-list {
+                li {
+                    &.h1:after {
+                        background: $lightgray;
+                    }
+
+                    a {
+                        color: lighten($darkgray, 10);
+                    }
+
+                    &:hover {
+                        * {
+                            color: $accentblue;
+                        }
+                    }
+
+                    &.active {
+                        * {
+                            color: $blue;
+                        }
+
+                        a:before {
+                            background: $blue;
+                        }
+                    }
+                }
+
+                &:not(.embedded) li {
+                    &:before {
+                        border-left-color: $lightgray;
+                      }
+
+                    &:not(.active):hover {
+                        a:before {
+                            background: $lightgray;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,23 @@
+@use '../../constants' as *;
+@use '~@angular/material/theming' as *;
+
+@mixin resources-theme($theme) {
+    $primary: map-get($theme, primary);
+    $background: map-get($theme, background);
+    $foreground: map-get($theme, foreground);
+    $is-dark-theme: map-get($theme, is-dark);
+
+    aio-resource-list {
+        .subcategory-title {
+            background-color: $mist;
+        }
+
+        .resource-row-link {
+            &:hover {
+                border-color: rgba($blue, 0.5);
+                box-shadow: 0 8px 8px rgba(1, 67, 163, 0.24), 0 0 8px rgba(1, 67, 163, 0.12),
+                    0 6px 18px rgba(43, 133, 231, 0.12);
+            }
+        }
+    }
+}

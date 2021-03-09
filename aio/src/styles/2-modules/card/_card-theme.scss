@@ -1,0 +1,31 @@
+@use '../../constants' as *;
+@use '~@angular/material/theming' as *;
+
+@mixin card-theme($theme) {
+    $primary: map-get($theme, primary);
+    $background: map-get($theme, background);
+    $foreground: map-get($theme, foreground);
+    $is-dark-theme: map-get($theme, is-dark);
+
+    .card-container {
+        .docs-card {
+            section {
+                color: $blue;
+            }
+
+            p {
+                color: $darkgray;
+            }
+
+            .card-footer {
+                color: $darkblue;
+                background-color: rgba($blue, 0.1);
+                border-top: 0.5px solid $lightgray;
+
+                a {
+                    color: $mediumgray;
+                }
+            }
+        }
+    }
+}
