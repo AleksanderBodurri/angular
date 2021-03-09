@@ -5,8 +5,24 @@
 @forward 'content-layout/content-layout';
 @forward 'doc-viewer/doc-viewer';
 @forward 'footer/footer';
-@forward 'layout-global';
+@forward 'layout-global/layout-global';
 @forward 'marketing-layout/marketing-layout';
-@forward 'not-found';
-@forward 'sidenav';
-@forward 'top-menu';
+@forward 'not-found/not-found';
+@forward 'sidenav/sidenav';
+@forward 'top-menu/top-menu';
+
+@use 'footer/footer-theme' as *;
+@use 'layout-global/layout-global-theme' as *;
+@use 'marketing-layout/marketing-layout-theme' as *;
+@use 'not-found/not-found-theme' as *;
+@use 'sidenav/sidenav-theme' as *;
+@use 'top-menu/top-menu-theme' as *;
+
+@mixin layout-theme($theme) {
+   @include footer-theme($theme);
+   @include layout-global-theme($theme);
+   @include marketing-layout-theme($theme);
+   @include not-found-theme($theme);
+   @include sidenav-theme($theme);
+   @include top-menu-theme($theme);
+} 

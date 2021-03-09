@@ -1,0 +1,40 @@
+@use '../../constants' as *;
+@use '~@angular/material/theming' as *;
+
+@mixin sidenav-theme($theme) {
+    $primary: map-get($theme, primary);
+    $background: map-get($theme, background);
+    $foreground: map-get($theme, foreground);
+    $is-dark-theme: map-get($theme, is-dark);
+
+    mat-sidenav-container.sidenav-container {
+        background-color: $white;
+
+        mat-sidenav.sidenav {
+            background-color: $superlightgray;
+            border-right: 1px solid $lightgray;
+
+            .doc-version {
+                border-top: 1px solid $lightgray;
+            }
+        }
+    }
+
+    aio-nav-menu {
+        aio-nav-item {
+            .vertical-menu-item {
+                color: $darkgray;
+
+                &:hover {
+                    background-color: $lightgray;
+                    color: $blue;
+                    text-shadow: 0 0 5px $white;
+                }
+
+                &.selected {
+                    color: $darkblue;
+                }
+            }
+        }
+    }
+}

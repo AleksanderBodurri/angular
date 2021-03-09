@@ -1,4 +1,5 @@
 @use '../../constants' as *;
+@use '~@angular/material/theming' as *;
 
 @mixin marketing-layout-theme($theme) {
   $primary: map-get($theme, primary);
