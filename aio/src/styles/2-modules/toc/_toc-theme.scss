@@ -43,33 +43,33 @@
             ul.toc-list {
                 li {
                     &.h1:after {
-                        background: $lightgray;
+                        background: if($is-dark-theme, $mediumgray, $lightgray);
                     }
 
                     a {
-                        color: lighten($darkgray, 10);
+                        color: if($is-dark-theme, $white, lighten($darkgray, 10));
                     }
 
                     &:hover {
                         * {
-                            color: $accentblue;
+                            color: if($is-dark-theme, $lightblue, $accentblue);
                         }
                     }
 
                     &.active {
                         * {
-                            color: $blue;
+                            color:  if($is-dark-theme, $blue-400, $blue);
                         }
 
                         a:before {
-                            background: $blue;
+                            background: if($is-dark-theme, $blue-400, $blue);
                         }
                     }
                 }
 
                 &:not(.embedded) li {
                     &:before {
-                        border-left-color: $lightgray;
+                        border-left-color: if($is-dark-theme, $darkgray, $lightgray);
                       }
 
                     &:not(.active):hover {

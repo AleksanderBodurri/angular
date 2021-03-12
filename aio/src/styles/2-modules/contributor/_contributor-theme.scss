@@ -8,8 +8,8 @@
     $is-dark-theme: map-get($theme, is-dark);
 
     aio-contributor {
-        background: $white;
-
+        background: mat-color($background, background);
+        
         .contributor-info {
             background: rgba($darkgray, 0.5);
 

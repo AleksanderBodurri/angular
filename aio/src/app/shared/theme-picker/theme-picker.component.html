@@ -1,3 +1,2 @@
-<button (click)="selectTheme({ 'light': 'dark', 'dark': 'light' }[currentTheme])">
-    Change theme (Current: {{ currentTheme }})
+<button (click)="selectTheme(nextTheme)" [attr.aria-label]="ariaLabel">
 </button>

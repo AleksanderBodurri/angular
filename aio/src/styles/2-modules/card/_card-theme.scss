@@ -1,4 +1,5 @@
 @use '../../constants' as *;
+@use '../../mixins' as *;
 @use '~@angular/material/theming' as *;
 
 @mixin card-theme($theme) {
@@ -9,23 +10,29 @@
 
     .card-container {
         .docs-card {
+            background-color: if($is-dark-theme, $darkgray, $white);
+
             section {
-                color: $blue;
+                color: if($is-dark-theme, $lightblue, $blue);
             }
 
             p {
-                color: $darkgray;
+                color: if($is-dark-theme, $offwhite, $darkgray);
             }
 
             .card-footer {
-                color: $darkblue;
+                color: if($is-dark-theme, $lightblue, $darkblue);
                 background-color: rgba($blue, 0.1);
-                border-top: 0.5px solid $lightgray;
+                border-top: 0.5px solid if($is-dark-theme, $darkgray, $lightgray);
 
                 a {
                     color: $mediumgray;
                 }
             }
         }
+    }
+
+    .card-section {
+        @include card(auto, 90%, if($is-dark-theme, $darkgray, $white));
     }
 }

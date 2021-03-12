@@ -9,8 +9,8 @@
 
     code-example {
         &:not(.no-box) {
-            background-color: rgba($backgroundgray, 0.2);
-            border: 0.5px solid $lightgray;
+            background-color: if($is-dark-theme, $darkgray, rgb($backgroundgray, 0.2));
+            border: 0.5px solid if($is-dark-theme, $darkgray, $lightgray);
             color: $darkgray;
         }
 
@@ -22,7 +22,7 @@
         }
 
         header {
-            background-color: $accentblue;
+            background-color: if($is-dark-theme, $blue-900, $accentblue);
             color: $offwhite;
         }
     }
@@ -79,10 +79,10 @@
             &.lang-sh,
             &.lang-bash {
                 .copy-button {
-                    color: $mediumgray;
+                    color: if($is-dark-theme, $blue-grey-200, $lightgray);
 
                     &:hover {
-                        color: $lightgray;
+                        color: if($is-dark-theme, $blue-grey-300, $superlightgray);
                     }
                 }
             }
@@ -92,15 +92,22 @@
     .sidenav-content {
         code {
             a {
-                color: $darkblue;
+                color: if($is-dark-theme, $lightblue, $darkblue);
             }
         }
 
         :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(pre) > code {
-            background-color: rgba($lightgray, 0.5);
-            color: $deepgray;
+            background-color: if($is-dark-theme, $darkgray, rgba($lightgray, 0.5));
+            color: if($is-dark-theme, $white, $darkgray);
         }
     }
+
+    // Dark Mode Code Palette
+    $code-lightteal: #00c7b4;
+    $code-lightred: #ff9292;
+    $code-lightgreen: #a9ef5f;
+    $code-lightpurple: #fe8eff;
+    $code-lightorange: #f3c354;
 
     /* PRETTY PRINTING STYLES for prettify.js. */
 
@@ -108,46 +115,46 @@
 
     /* SPAN elements with the classes below are added by prettyprint. */
     .pln {
-        color: #000;
+        color: if($is-dark-theme, $white , #000);
     } /* plain text */
 
     @media screen {
         .str {
-            color: #800;
+            color: if($is-dark-theme, $code-lightorange , #800);
         } /* string content */
         .kwd {
-            color: #00f;
+            color: if($is-dark-theme, $code-lightteal , #00f);
         } /* a keyword */
         .com {
-            color: #060;
+            color: if($is-dark-theme, $code-lightgreen , #060);
         } /* a comment */
         .typ {
-            color: red;
+            color: if($is-dark-theme, $code-lightred, red);
         } /* a type name */
         .lit {
-            color: #08c;
+            color: if($is-dark-theme, $lightblue, #08c);
         } /* a literal value */
         /* punctuation, lisp open bracket, lisp close bracket */
         .pun,
         .opn,
         .clo {
-            color: #660;
+            color: if($is-dark-theme, $orange , #660);
         }
         .tag {
-            color: #008;
+            color: if($is-dark-theme, $lightblue , #008);
         } /* a markup tag name */
         .atn {
-            color: #606;
+            color: if($is-dark-theme, $code-lightpurple , #606);
         } /* a markup attribute name */
         .atv {
-            color: #800;
+            color: if($is-dark-theme, $code-lightorange , #800);
         } /* a markup attribute value */
         .dec,
         .var {
-            color: #606;
+            color: if($is-dark-theme, $code-lightpurple , #606);
         } /* a declaration; a variable name */
         .fun {
-            color: red;
+            color: if($is-dark-theme, $code-lightred, red);
         } /* a function name */
     }
 

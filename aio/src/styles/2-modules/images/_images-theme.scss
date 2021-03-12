@@ -9,12 +9,11 @@
 
     .content {
         .lightbox {
-            background: $white;
-            border: 1px solid $lightgray;
-            background-color: $lightboxgray;
+            border: 1px solid if($is-dark-theme, $darkgray, $lightgray);
+            background-color: if($is-dark-theme, $deepgray, $lightboxgray);
 
             img {
-                background-color: $white;
+                background-color: if($is-dark-theme, $darkgray, $white);
             }
         }
     }

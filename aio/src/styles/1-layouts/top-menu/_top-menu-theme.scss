@@ -85,6 +85,18 @@
             }
         }
 
+        // THEME PICKER
+
+        aio-theme-picker {
+            button {
+                background-color: if($is-dark-theme, $white, $darkgray);
+
+                &:before {
+                    background-color: if($is-dark-theme, $darkgray, $white);
+                }
+            }
+        }
+
         // EXTERNAL LINK ICONS
         .toolbar-external-icons-container {
             a {

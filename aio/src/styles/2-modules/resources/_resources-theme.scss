@@ -9,7 +9,7 @@
 
     aio-resource-list {
         .subcategory-title {
-            background-color: $mist;
+            background-color: if($is-dark-theme, $darkgray, $mist);
         }
 
         .resource-row-link {

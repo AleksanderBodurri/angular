@@ -8,6 +8,6 @@
     $is-dark-theme: map-get($theme, is-dark);
 
     hr {
-        background: $lightgray;
+        background: if($is-dark-theme, $mediumgray, $lightgray);
     }
 }

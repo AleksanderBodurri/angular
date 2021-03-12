@@ -20,6 +20,14 @@ export class ThemePickerComponent implements OnInit {
     }
   }
 
+  get nextTheme(): 'light' | 'dark' {
+    return { light: 'dark', dark: 'light' }[this.currentTheme] as 'light' | 'dark';
+  }
+
+  get ariaLabel(): string {
+    return `Turn on ${this.nextTheme} mode.`;
+  }
+
   selectTheme(theme: string) {
     this.currentTheme = theme as 'light' | 'dark';
 

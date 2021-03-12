@@ -17,7 +17,11 @@
                 .presskit-icon-item {
                     .presskit-image-container {
                         .transparent-img {
-                            background-color: $deepgray;
+                            background-color: $white;
+
+                            &-inverse {
+                                background-color: if($is-dark-theme, mat-color($background, background), $deepgray);
+                            }
                         }
                     }
                 }

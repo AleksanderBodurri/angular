@@ -148,6 +148,42 @@ mat-toolbar.app-toolbar {
     }
   }
 
+    // THEME PICKER
+
+  aio-theme-picker {
+    margin-right: 20px;
+
+    @media screen and (max-width: 480px) {
+      margin-right: 3px;
+    }
+
+    button {
+      $button-size: 25px;
+
+      display: flex;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+      border-radius: 100%;
+      padding: 0;
+      width: $button-size;
+      height: $button-size;
+
+      &:hover {
+        opacity: 0.8;
+      }
+
+      &:before {
+        content: "";
+        position: relative;
+        display: inline-block;
+        width: 50%;
+        height: 100%;
+      }
+    }
+  }
+
+
   // SEARCH BOX
   aio-search-box.search-container {
     display: flex;

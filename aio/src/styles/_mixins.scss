@@ -45,10 +45,10 @@
 }
 
 // INFO CARD SKELETON
-@mixin card($height, $width) {
+@mixin card($height, $width, $background-color: $white) {
   height: $height;
   width: $width;
-  background-color: $white;
+  background-color: $background-color;
   border-radius: 4px;
   box-shadow: 0 2px 2px rgba($black, 0.24), 0 0 2px rgba($black, 0.12);
   box-sizing: border-box;
