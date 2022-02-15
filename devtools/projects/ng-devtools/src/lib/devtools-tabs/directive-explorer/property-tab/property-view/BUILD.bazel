@@ -50,6 +50,7 @@ ng_module(
     deps = [
         "//devtools/projects/ng-devtools/src/lib/devtools-tabs/directive-explorer/directive-forest/index-forest",
         "//devtools/projects/ng-devtools/src/lib/devtools-tabs/directive-explorer/property-resolver",
+        "//devtools/projects/ng-devtools/src/lib/devtools-tabs/injector-tree",
         "//devtools/projects/protocol",
         "//packages/common",
         "//packages/core",

@@ -107,6 +107,7 @@ ts_library(
         ":component_tree",
         ":highlighter",
         ":interfaces",
+        ":router_tree",
         ":set_console_reference",
         ":utils",
         "//devtools/projects/ng-devtools-backend/src/lib/component-inspector",

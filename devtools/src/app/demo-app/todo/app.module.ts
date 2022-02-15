@@ -19,6 +19,7 @@ import {DialogComponent} from './dialog.component';
 
 @NgModule({
   declarations: [AppTodoComponent, DialogComponent],
+  providers: [],
   imports: [
     MatDialogModule,
     MatFormFieldModule,
@@ -51,7 +52,10 @@ import {DialogComponent} from './dialog.component';
     ]),
   ],
   exports: [AppTodoComponent],
-  bootstrap: [AppTodoComponent],
+  bootstrap: [],
 })
-export class AppModule {
+export class TodoAppModule {
+  constructor() {
+    (window as any).TodoAppModule = TodoAppModule;
+  }
 }

@@ -27,7 +27,7 @@ const commonTypes = {
 
 const MAX_LEVEL = 1;
 
-const getPropType = (prop: any): PropType => {
+export const getPropType = (prop: any): PropType => {
   if (prop === undefined) {
     return PropType.Undefined;
   }
@@ -55,7 +55,7 @@ const getPropType = (prop: any): PropType => {
   return PropType.Unknown;
 };
 
-const nestedSerializer =
+export const nestedSerializer =
     (instance: any, propName: string|number, nodes: NestedProp[], currentLevel = 0,
      level = MAX_LEVEL): Descriptor => {
       const serializableInstance = instance[propName];
@@ -87,7 +87,7 @@ const nestedSerializerContinuation = (nodes: NestedProp[], level: number) =>
       return nestedSerializer(instance, propName, nodes[idx].children, nestedLevel, level);
     };
 
-const levelSerializer =
+export const levelSerializer =
     (instance: any, propName: string|number, currentLevel = 0, level = MAX_LEVEL,
      continuation = levelSerializer): Descriptor => {
       const serializableInstance = instance[propName];

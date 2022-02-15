@@ -12,4 +12,7 @@ export abstract class ApplicationOperations {
   abstract viewSource(position: ElementPosition): void;
   abstract selectDomElement(position: ElementPosition): void;
   abstract inspect(directivePosition: DirectivePosition, objectPath: string[]): void;
+  abstract inspectInjector(
+      directivePosition: DirectivePosition, injectorParameter: any,
+      injectorPosition: number[]): void;
 }

@@ -1,0 +1,30 @@
+load("//devtools/tools:ng_module.bzl", "ng_module")
+load("@io_bazel_rules_sass//:defs.bzl", "sass_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+sass_binary(
+    name = "injector_tree_component_styles",
+    src = "injector-tree.component.scss",
+)
+
+ng_module(
+    name = "injector-tree",
+    srcs = [
+        "injector-tree.component.ts",
+        "injector-tree-graph.ts",
+    ],
+    angular_assets = [
+        "injector-tree.component.html",
+        ":injector_tree_component_styles",
+    ],
+    deps = [
+        "//devtools/projects/protocol",
+        "//packages/common",
+        "//packages/core",
+        "@npm//@angular/material",
+        "@npm//@types",
+        "@npm//d3",
+        "@npm//rxjs",
+    ],
+)

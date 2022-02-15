@@ -12,6 +12,16 @@ import {ApplicationOperations} from 'ng-devtools';
 import {DirectivePosition, ElementPosition} from 'protocol';
 
 export class ChromeApplicationOperations extends ApplicationOperations {
+  inspectInjector(
+      directivePosition: DirectivePosition, injectorParameter: any,
+      injectorPosition: number[]): void {
+    if (chrome.devtools) {
+      const args = {injectorParameter, directivePosition, injectorPosition};
+      chrome.devtools.inspectedWindow.eval(
+          `inspect(inspectedApplication.findInjector('${JSON.stringify(args)}'))`);
+    }
+  }
+
   viewSource(position: ElementPosition): void {
     if (chrome.devtools) {
       chrome.devtools.inspectedWindow.eval(

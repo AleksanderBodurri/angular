@@ -18,12 +18,25 @@ import {FlatNode} from '../../property-resolver/element-property-resolver';
   styleUrls: ['./property-tab-body.component.scss'],
 })
 export class PropertyTabBodyComponent {
-  @Input() currentSelectedElement: IndexedNode|null;
+  @Input()
+  set currentSelectedElement(element: IndexedNode|null) {
+    this._currentSelectedElement = element;
+    this.directives = this.getCurrentDirectives();
+  };
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
+  @Output() inspectInjector = new EventEmitter<any>();
 
-  getCurrentDirectives(): string[]|undefined {
+  directives: string[] = [];
+
+  get currentSelectedElement(): IndexedNode|null {
+    return this._currentSelectedElement;
+  }
+
+  private _currentSelectedElement: IndexedNode|null = null;
+
+  getCurrentDirectives(): string[] {
     if (!this.currentSelectedElement) {
-      return;
+      return [];
     }
     const directives = this.currentSelectedElement.directives.map((d) => d.name);
     if (this.currentSelectedElement.component) {

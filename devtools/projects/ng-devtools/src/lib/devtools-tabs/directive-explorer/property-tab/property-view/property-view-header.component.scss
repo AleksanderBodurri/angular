@@ -8,3 +8,10 @@ mat-toolbar {
   font-weight: 500;
   height: auto;
 }
+
+
+:host-context(.dark-theme) {
+  .mat-toolbar {
+    background: #161515;
+  }
+}

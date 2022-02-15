@@ -6,8 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component} from '@angular/core';
+import {Component, Inject} from '@angular/core';
 import {Router} from '@angular/router';
+
+import {foo} from './app.module';
 
 @Component({
   selector: 'app-root',
@@ -15,5 +17,7 @@ import {Router} from '@angular/router';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  constructor(public router: Router) {}
+  foo = 'bar';
+
+  constructor(public router: Router, @Inject(foo) _foo: string) {}
 }

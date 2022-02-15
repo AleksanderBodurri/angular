@@ -1,7 +1,25 @@
 :host {
   ::ng-deep {
+    .mat-tab-label {
+      min-width: unset;
+      line-height: 30px;
+      height: 30px;
+      font-size: 13px;
+      padding: 0px 10px;
+      opacity: 1;
+      font-weight: 400;
+    }
+
     mat-expansion-panel {
+      $border-color: #eeeeee;
+
       border-radius: unset !important;
+      border-top: 1px solid $border-color;
+      
+      &.last {
+        border-bottom: 1px solid $border-color;
+      }
+      
     }
 
     .mat-expansion-panel-body {
@@ -56,4 +74,163 @@
       }
     }
   }
+}
+
+
+:host-context(.dark-theme) {
+  .injector-param {
+    .parameter-name {
+      color: #55c8bd;
+    }
+  }
+
+  .injector-param {
+    .parameter-flag {
+      a {
+        background: #3e3e3e;
+
+        &:hover {
+          background: #313131;
+        }
+      }
+    }
+  }
+}
+
+.injector-param {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  padding-left: 1rem;
+  gap: 0.25rem;
+  font-size: .8rem;
+  height: 25px;
+  align-items: center;
+
+  .icon {
+    display: flex;
+    cursor: pointer;
+
+    mat-icon {
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .parameter-name {
+    color: #d23a32;
+  }
+
+  .parameter-flag {
+    a {
+      display: inline-block;
+      padding: 0px 6px;
+      background: #dddddd;
+      border-radius: 10px;
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        background: #c6c6c6;
+      }
+    }
+  }
+}
+
+:host {
+  ::ng-deep {
+    .link {
+      stroke: #9b9b9b;
+      stroke-width: 1px;
+      fill: none;
+    }
+
+    .node {
+      cursor: pointer;
+    }
+
+    .node-module {
+      stroke: #f05057;
+      fill: #f9c2c5;
+      stroke-width: 1px;
+    }
+
+    .node-imported-module {
+      stroke: #8838f7;
+      fill: #f9c2c5;
+      stroke-width: 3px;
+    }
+
+    & .node-module:hover,
+    & .node-module.selected {
+      fill: #f05057;
+    }
+
+    & .node-element {
+      stroke: #28ab2c;
+      fill: #a7d5a9;
+      stroke-width: 1px;
+    }
+
+    & .node-element:hover,
+    & .node-element.selected {
+      fill: #28ab2c;
+    }
+
+    & .node-null {
+      stroke: #848484;
+      fill: #ffffff;
+      stroke-width: 1px;
+    }
+
+    & .node-null:hover,
+    & .node-null.selected {
+      fill: #2828ab;
+    }
+
+    & text {
+      fill: #000000;
+      font-weight: 300;
+
+      &:hover {
+        fill: #35a0ff;
+      }
+    }
+  }
+}
+
+:host-context(.dark-theme) {
+.legend {
+  background: #2f2c2c;
+}
+
+::ng-deep {
+  .link {
+    stroke: #bcc5ce;
+    stroke-width: 1px;
+    fill: none;
+  }
+
+  & text {
+    fill: #bcc5ce;
+
+    &:hover {
+      fill: #35a0ff;
+    }
+  }
+
+  mat-expansion-panel {
+    $border-color: #3f3f3f;
+
+    border-radius: unset !important;
+    border-color: $border-color;
+  }
+}
 }

@@ -161,7 +161,7 @@ esbuild(
     config = "//devtools/tools/esbuild:esbuild_config_iife",
     entry_point = "backend.ts",
     format = "iife",
-    minify = True,
+    minify = False,
     platform = "browser",
     splitting = False,
     target = "esnext",

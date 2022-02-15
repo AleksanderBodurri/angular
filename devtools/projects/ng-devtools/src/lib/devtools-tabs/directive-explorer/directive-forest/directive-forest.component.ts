@@ -31,6 +31,7 @@ export class DirectiveForestComponent implements OnInit, OnDestroy {
     const result = this._updateForest(forest);
     const changed =
         result.movedItems.length || result.newItems.length || result.removedItems.length;
+
     if (this.currentSelectedElement && changed) {
       this._reselectNodeOnUpdate();
     }

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ComponentExplorerViewQuery, ComponentType, DevToolsNode, DirectivePosition, DirectiveType, ElementPosition, Events, MessageBus, ProfilerFrame,} from 'protocol';
+import {ComponentExplorerViewQuery, ComponentType, DevToolsNode, DirectivePosition, DirectiveType, ElementPosition, Events, InjectorGraphViewQuery, MessageBus, ProfilerFrame,} from 'protocol';
 import {debounceTime} from 'rxjs/operators';
 
 import {appIsAngularInDevMode, appIsAngularIvy, appIsSupportedAngularVersion, getAngularVersion,} from './angular-check';
@@ -25,6 +25,11 @@ export const subscribeToClientEvents = (messageBus: MessageBus<Events>): void =>
 
   messageBus.on(
       'getLatestComponentExplorerView', getLatestComponentExplorerViewCallback(messageBus));
+
+  messageBus.on('getLatestInjectorGraphView', getLatestInjectorGraphCallback(messageBus));
+  messageBus.on(
+      'traceInjectorParameterResolutionPath',
+      traceInjectorParameterResolutionPathCallback(messageBus));
 
   messageBus.on('queryNgAvailability', checkForAngularCallback(messageBus));
 
@@ -59,6 +64,19 @@ export const subscribeToClientEvents = (messageBus: MessageBus<Events>): void =>
 // Callback Definitions
 //
 
+const getLatestInjectorGraphCallback = (messageBus: MessageBus<Events>) => () => {
+  const forestWithInjectorPaths =
+      prepareForestForSerialization(
+          initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true) as any;
+  messageBus.emit('latestInjectorGraphView', [forestWithInjectorPaths]);
+};
+
+export interface InjectorGraphNode {
+  owner: string;
+  type: string;
+  children: InjectorGraphNode[]
+}
+
 const shutdownCallback = (messageBus: MessageBus<Events>) => () => {
   messageBus.destroy();
 };
@@ -67,7 +85,6 @@ const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) 
     (query?: ComponentExplorerViewQuery) => {
       // We want to force re-indexing of the component tree.
       // Pressing the refresh button means the user saw stuck UI.
-
       initializeOrGetDirectiveForestHooks().indexForest();
 
       if (!query) {
@@ -79,6 +96,7 @@ const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) 
         ]);
         return;
       }
+
       messageBus.emit('latestComponentExplorerView', [
         {
           forest: prepareForestForSerialization(
@@ -130,6 +148,50 @@ const getNestedPropertiesCallback = (messageBus: MessageBus<Events>) => (
   }
   messageBus.emit('nestedProperties', [position, {props: serializeDirectiveState(data)}, propPath]);
 };
+
+const traceInjectorParameterResolutionPathCallback =
+    (messageBus: MessageBus<Events>) => (
+        directivePosition: any,
+        injectorParameter: any,
+        ) => {
+      const node = queryDirectiveForest(
+          directivePosition.element,
+          initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest());
+      if (node === null) {
+        console.error(`Cannot find element associated with node ${directivePosition}`);
+        return undefined;
+      }
+
+      const isDirective = directivePosition.directive !== undefined &&
+          node.directives[directivePosition.directive] &&
+          typeof node.directives[directivePosition.directive] === 'object';
+
+      const instance = isDirective ? node.directives[directivePosition.directive].instance :
+                                     node.component?.instance;
+      if (!instance) {
+        return;
+      }
+      const foundParameter = (window as any)
+                                 ?.ng.getDirectiveMetadata(instance)
+                                 ?.injectorParameters[injectorParameter.paramIndex];
+
+      const resolutionPath =
+          (window as any)?.ng.traceTokenInjectorPath(node.nativeElement, foundParameter.token);
+
+      const serializeResolutionPath = (injectors: any[]) => {
+        (injectors ?? []).forEach(injector => {
+          injector.owner = injector.owner.name;
+          if (injector.type === 'Module' ||
+              injector.type === 'ImportedModule' && injector.importPath) {
+            serializeResolutionPath(injector.importPath);
+          }
+        });
+      };
+
+      serializeResolutionPath(resolutionPath);
+
+      messageBus.emit('injectorParameterResolutionPath', [resolutionPath]);
+    }
 
 //
 // Subscribe Helpers
@@ -193,13 +255,19 @@ export interface SerializableComponentTreeNode extends
   children: SerializableComponentTreeNode[];
 }
 
+
+const getInjectorResolutionPath =
+    (element: Node|undefined) => {
+      return (window as any).ng.getInjectorResolutionPath(element);
+    }
+
 // Here we drop properties to prepare the tree for serialization.
 // We don't need the component instance, so we just traverse the tree
 // and leave the component name.
-const prepareForestForSerialization =
-    (roots: ComponentTreeNode[]): SerializableComponentTreeNode[] => {
+const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolutionPath = false):
+    SerializableComponentTreeNode[] => {
       return roots.map((node) => {
-        return {
+        const serializedNode = {
           element: node.element,
           component: node.component ? {
             name: node.component.name,
@@ -212,7 +280,17 @@ const prepareForestForSerialization =
                 name: d.name,
                 id: initializeOrGetDirectiveForestHooks().getDirectiveId(d.instance),
               })),
-          children: prepareForestForSerialization(node.children),
+          children: prepareForestForSerialization(node.children, includeResolutionPath),
         } as SerializableComponentTreeNode;
+
+        if (includeResolutionPath) {
+          const resolutionPath: any[] = getInjectorResolutionPath(node.nativeElement);
+          for (const injector of resolutionPath) {
+            injector.owner = injector.owner.name;
+          }
+          serializedNode['resolutionPath'] = resolutionPath;
+        }
+
+        return serializedNode;
       });
     };

@@ -25,11 +25,13 @@
 <div class="tab-content">
   <ng-directive-explorer
     [showCommentNodes]="showCommentNodes"
+    [forest]="forest"
     [class.hidden]="activeTab !== 'Components'"
     (toggleInspector)="toggleInspector()"
   ></ng-directive-explorer>
   <ng-profiler [class.hidden]="activeTab !== 'Profiler'"></ng-profiler>
   <ng-router-tree [routes]="routes" [class.hidden]="activeTab !== 'Router Tree'"></ng-router-tree>
+  <ng-injector-tree (reloadInjectorTree)="reloadInjectorTree()" [injectorTree]="injectorTree" [class.hidden]="activeTab !== 'Injector Tree'"></ng-injector-tree>
 </div>
 
 <mat-menu #menu="matMenu">

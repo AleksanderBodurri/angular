@@ -27,6 +27,7 @@ ng_module(
     ],
     deps = [
         "//packages/common",
+        "//packages/common/http",
         "//packages/core",
         "//packages/router",
     ],

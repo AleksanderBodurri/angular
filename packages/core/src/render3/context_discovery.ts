@@ -215,7 +215,7 @@ export function isDirectiveInstance(instance: any): boolean {
 /**
  * Locates the element within the given LView and returns the matching index
  */
-function findViaNativeElement(lView: LView, target: RElement): number {
+export function findViaNativeElement(lView: LView, target: RElement): number {
   const tView = lView[TVIEW];
   for (let i = HEADER_OFFSET; i < tView.bindingStartIndex; i++) {
     if (unwrapRNode(lView[i]) === target) {
@@ -248,7 +248,7 @@ function traverseNextElement(tNode: TNode): TNode|null {
 /**
  * Locates the component within the given LView and returns the matching index
  */
-function findViaComponent(lView: LView, componentInstance: {}): number {
+export function findViaComponent(lView: LView, componentInstance: {}): number {
   const componentIndices = lView[TVIEW].components;
   if (componentIndices) {
     for (let i = 0; i < componentIndices.length; i++) {
@@ -273,7 +273,7 @@ function findViaComponent(lView: LView, componentInstance: {}): number {
 /**
  * Locates the directive within the given LView and returns the matching index
  */
-function findViaDirective(lView: LView, directiveInstance: {}): number {
+export function findViaDirective(lView: LView, directiveInstance: {}): number {
   // if a directive is monkey patched then it will (by default)
   // have a reference to the LView of the current view. The
   // element bound to the directive being search lives somewhere

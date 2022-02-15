@@ -1,6 +1,63 @@
-<mat-accordion cdkDropList (cdkDropListDropped)="drop($event)" *ngIf="controlsLoaded" [multi]="true">
-  <div class="mat-accordion-content" *ngFor="let index of categoryOrder" cdkDrag>
-    <mat-expansion-panel [class]="panels[index].class" *ngIf="!panels[index].hidden" [expanded]="true">
+<mat-accordion *ngIf="controlsLoaded" [multi]="true">
+  <div class="mat-accordion-content" *ngIf="directiveInjectorParameters && directiveInjectorParameters.length > 0">
+    <mat-expansion-panel [expanded]="false">
+      <mat-expansion-panel-header collapsedHeight="25px" expandedHeight="25px">
+        <mat-panel-title>
+          Injector
+
+          <a
+          href="https://angular.io/guide/hierarchical-dependency-injection"
+          target="_blank"
+          class="documentation"
+          matTooltip="Open docs reference"
+          (click)="$event.stopPropagation()"
+        >
+          <mat-icon class="docs-link">open_in_new</mat-icon>
+        </a>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <mat-tab-group [(selectedIndex)]="propertyTabIndex">
+        <mat-tab label="Parameters">
+          <ol class="injector-param" *ngFor="let parameter of directiveInjectorParameters">
+            <span class="icon" (click)="inspectInjectorParameterToken(parameter)">
+              <mat-icon>
+                outbound
+              </mat-icon>
+            </span>
+            <li class="parameter">
+              <span class="parameter-name">{{ parameter.token }}<span *ngIf="parameter.value">:</span></span>
+              <span class="parameter-value"> {{ parameter.value }}</span>
+            </li>
+            <ng-container *ngFor="let flag of parameter.flags | keyvalue">
+              <li class="parameter-flag" *ngIf="flag.value" matTooltip="See docs reference.">
+                <a target="_blank" [href]="injectorFlagContent[flag.key]?.link">{{ flag.key }}</a>
+              </li>
+            </ng-container>
+          </ol>
+        </mat-tab>
+        <mat-tab [label]="tokenName ? 'Resolution Path (' + tokenName + ')' : 'Resolution Path'">
+          <ng-container *ngIf="tokenName; else noTokenSelected">
+            <section *ngIf="!specialToken; else specialTokenCase" #injectorTree class="graph">
+              <svg #svgContainer class="svg-container">
+                  <g #mainGroup></g>
+              </svg>
+            </section>
+            <ng-template #specialTokenCase>
+              <p>{{ tokenName }} is a special DI token that is not resolved through the typical Injector hierarchy traversal</p>
+              <p>todo: implement a screen for each type of special token (Attribute params, special ElementInjector tokens, etc)</p>
+            </ng-template>
+          </ng-container>
+          <ng-template #noTokenSelected>
+            Click on a token in the "Parameters" tab to inspect its resolution path.
+          </ng-template>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-expansion-panel>
+  </div>
+
+  <div class="mat-accordion-content" *ngFor="let index of categoryOrder; let last = last">
+    <mat-expansion-panel [class.last]="last" [class]="panels[index].class" *ngIf="!panels[index].hidden" [expanded]="false">
       <mat-expansion-panel-header collapsedHeight="25px" expandedHeight="25px">
         <mat-panel-title>
           {{ panels[index].title }}

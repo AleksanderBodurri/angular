@@ -6,7 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, InjectionToken, OnDestroy, OnInit, Output} from '@angular/core';
+export const MY_TOKEN = new InjectionToken('my token');
 
 import {Todo} from './todo';
 import {TodoFilter} from './todos.pipe';
@@ -18,9 +19,12 @@ const fib = (n: number) => {
   return fib(n - 1) + fib(n - 2);
 };
 
+export class MyClass {}
+
 @Component({
   templateUrl: 'todos.component.html',
   selector: 'app-todos',
+  providers: [{provide: MY_TOKEN, useClass: MyClass}]
 })
 export class TodosComponent implements OnInit, OnDestroy {
   todos: Todo[] = [
@@ -51,7 +55,7 @@ export class TodosComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    fib(40);
+    // fib(40);
     if (typeof window !== 'undefined') {
       window.removeEventListener('hashchange', this.hashListener);
     }

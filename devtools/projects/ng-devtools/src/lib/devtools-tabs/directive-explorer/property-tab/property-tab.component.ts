@@ -20,4 +20,5 @@ export class PropertyTabComponent {
   @Input() currentSelectedElement: IndexedNode;
   @Output() viewSource = new EventEmitter<void>();
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
+  @Output() inspectInjector = new EventEmitter<any>();
 }

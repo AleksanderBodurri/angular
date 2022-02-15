@@ -6,10 +6,17 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component} from '@angular/core';
+import {Component, Injectable} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
 
 import {DialogComponent} from './dialog.component';
+
+@Injectable()
+export class ProvidedInModule4 {
+}
+@Injectable()
+export class ProvidedInDemoAppModule {
+}
 
 @Component({
   selector: 'app-todo-demo',
@@ -20,7 +27,9 @@ export class AppTodoComponent {
   name: string;
   animal: string;
 
-  constructor(public dialog: MatDialog) {}
+  constructor(
+      public dialog: MatDialog, private _target: ProvidedInModule4,
+      private _target2: ProvidedInDemoAppModule) {}
 
   openDialog(): void {
     const dialogRef = this.dialog.open(DialogComponent, {

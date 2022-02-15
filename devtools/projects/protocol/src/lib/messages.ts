@@ -60,6 +60,7 @@ export interface DirectiveMetadata {
   outputs: {[name: string]: string};
   encapsulation: ViewEncapsulation;
   onPush: boolean;
+  injectorParameters?: any[]
 }
 
 export interface Properties {
@@ -104,10 +105,18 @@ export interface ComponentExplorerViewQuery {
   propertyQuery: PropertyQuery;
 }
 
+
 export interface ComponentExplorerView {
   forest: DevToolsNode[];
   properties?: DirectivesProperties;
 }
+
+export interface InjectorGraphViewQuery {
+  directivePosition: DirectivePosition;
+  paramIndex: number;
+}
+
+export interface InjectorGraphView {}
 
 export interface LifecycleProfile {
   ngOnInit?: number;
@@ -200,4 +209,10 @@ export interface Events {
 
   enableTimingAPI: () => void;
   disableTimingAPI: () => void;
+
+  getLatestInjectorGraphView: (query?: InjectorGraphViewQuery) => void;
+  latestInjectorGraphView: (forest: DevToolsNode[]) => void;
+
+  traceInjectorParameterResolutionPath: (directivePosition: any, injectorParameter: any) => void;
+  injectorParameterResolutionPath: (path: any) => void;
 }

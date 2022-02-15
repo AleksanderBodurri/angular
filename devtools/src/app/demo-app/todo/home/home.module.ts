@@ -17,6 +17,7 @@ import {TodosComponent} from './todos.component';
 import {TodosFilter} from './todos.pipe';
 
 @NgModule({
+  providers: [],
   imports: [
     CommonModule,
     RouterModule.forChild([

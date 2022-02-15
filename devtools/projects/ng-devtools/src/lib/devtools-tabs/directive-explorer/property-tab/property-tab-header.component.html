@@ -6,7 +6,7 @@
           <mat-expansion-panel-header collapsedHeight="32px" expandedHeight="32px">
             <mat-panel-title>
               <div class="element-header">
-                <div class="component-name">{{ currentSelectedElement.component.name }}</div>
+                <div class="component-name">Component: {{ currentSelectedElement.component.name }}</div>
                 <button matTooltip="Open component source" mat-icon-button (click)="handleViewSource($event)">
                   <mat-icon> code </mat-icon>
                 </button>
@@ -20,7 +20,7 @@
   </ng-container>
   <ng-template #currentElementIsDOMElement>
     <div class="element-header">
-      <div class="element-name">{{ currentSelectedElement.element }}</div>
+      <div class="element-name">Element: {{ currentSelectedElement.element }}</div>
     </div>
   </ng-template>
 </ng-container>
