@@ -6,11 +6,20 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {ScrollingModule} from '@angular/cdk/scrolling';
+import {CommonModule} from '@angular/common';
 import {ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output, ViewChild,} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
+import {MatSnackBarModule} from '@angular/material/snack-bar';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatTreeModule} from '@angular/material/tree';
 import {ComponentExplorerView, ComponentExplorerViewQuery, DevToolsNode, DirectivePosition, ElementPosition, Events, MessageBus, PropertyQuery, PropertyQueryTypes,} from 'protocol';
 
-import {SplitComponent} from '../../../lib/vendor/angular-split/public_api';
+import {AngularSplitModule, SplitComponent} from '../../../lib/vendor/angular-split/public_api';
 import {ApplicationOperations} from '../../application-operations/index';
+import {SplitModule} from '../../vendor/angular-split/lib/component/split.module';
 
 import {BreadcrumbsComponent} from './directive-forest/breadcrumbs/breadcrumbs.component';
 import {FlatNode} from './directive-forest/component-data-source';
@@ -18,6 +27,7 @@ import {DirectiveForestComponent} from './directive-forest/directive-forest.comp
 import {IndexedNode} from './directive-forest/index-forest';
 import {constructPathOfKeysToPropertyValue} from './property-resolver/directive-property-resolver';
 import {ElementPropertyResolver, FlatNode as PropertyFlatNode} from './property-resolver/element-property-resolver';
+import {PropertyTabComponent} from './property-tab/property-tab.component';
 
 const sameDirectives = (a: IndexedNode, b: IndexedNode) => {
   if ((a.component && !b.component) || (!a.component && b.component)) {
@@ -45,6 +55,12 @@ const sameDirectives = (a: IndexedNode, b: IndexedNode) => {
       useClass: ElementPropertyResolver,
     },
   ],
+  standalone: true,
+  imports: [
+    MatTreeModule, MatCardModule, ScrollingModule, MatIconModule, CommonModule, MatButtonModule,
+    MatSnackBarModule, SplitModule, DirectiveForestComponent, MatTooltipModule,
+    PropertyTabComponent, BreadcrumbsComponent
+  ]
 })
 export class DirectiveExplorerComponent implements OnInit, OnDestroy {
   @Input() showCommentNodes = false;

@@ -6,14 +6,31 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {ScrollingModule} from '@angular/cdk/scrolling';
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, OnDestroy, Output} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatIconModule} from '@angular/material/icon';
+import {MatInputModule} from '@angular/material/input';
+import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatSelectModule} from '@angular/material/select';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {NgxFlamegraphModule} from 'ngx-flamegraph';
 import {ProfilerFrame} from 'protocol';
 import {BehaviorSubject, Observable, Subscription} from 'rxjs';
 import {map, share} from 'rxjs/operators';
 
 import {createFilter, Filter, noopFilter} from './filter';
+import {FrameSelectorComponent} from './frame-selector.component';
 import {mergeFrames} from './record-formatter/frame-merger';
 import {GraphNode} from './record-formatter/record-formatter';
+import {RecordingModalComponent} from './recording-modal.component';
+import {TimelineVisualizerComponent} from './recording-visualizer/timeline-visualizer.component';
+import {TimelineControlsComponent} from './timeline-controls.component';
 import {VisualizationMode} from './visualization-mode';
 
 const MAX_HEIGHT = 50;
@@ -22,6 +39,13 @@ const MAX_HEIGHT = 50;
   selector: 'ng-recording-timeline',
   templateUrl: './timeline.component.html',
   styleUrls: ['./timeline.component.scss'],
+  standalone: true,
+  imports: [
+    ScrollingModule, CommonModule, FormsModule, MatCheckboxModule, MatDialogModule,
+    MatProgressBarModule, MatButtonModule, MatTooltipModule, MatIconModule, MatCardModule,
+    MatInputModule, NgxFlamegraphModule, MatSelectModule, TimelineControlsComponent,
+    RecordingModalComponent, FrameSelectorComponent, TimelineVisualizerComponent
+  ]
 })
 export class TimelineComponent implements OnDestroy {
   @Input()

@@ -6,7 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {AfterViewChecked, ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {MatInputModule} from '@angular/material/input';
 
 type EditorType = string|number|boolean;
 type EditorResult = EditorType|Array<EditorType>;
@@ -28,6 +31,8 @@ const parseValue = (value: EditorResult): EditorResult => {
   templateUrl: './property-editor.component.html',
   selector: 'ng-property-editor',
   styleUrls: ['./property-editor.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, MatInputModule]
 })
 export class PropertyEditorComponent implements AfterViewChecked, OnInit {
   @Input() key: string;

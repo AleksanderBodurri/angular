@@ -1,4 +1,14 @@
-<as-split unit="percent" [gutterSize]="9">
+<!-- These don't appear for some reason -->
+
+<ng-flamegraph-visualizer
+  [frame]="frame"
+  [changeDetection]="changeDetection"
+  (nodeSelect)="handleNodeSelect($event)"
+></ng-flamegraph-visualizer>
+<ng-tree-map-visualizer [frame]="frame"></ng-tree-map-visualizer>
+<ng-bargraph-visualizer [frame]="frame" (nodeSelect)="handleNodeSelect($event)"></ng-bargraph-visualizer>
+
+<!-- <as-split unit="percent" [gutterSize]="9">
   <as-split-area size="75">
     <ng-container [ngSwitch]="_visualizationMode">
       <ng-container *ngSwitchCase="cmpVisualizationModes.FlameGraph">
@@ -37,4 +47,4 @@
       </section>
     </mat-card>
   </as-split-area>
-</as-split>
+</as-split> -->

@@ -7,6 +7,7 @@
  */
 
 import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {NgxFlamegraphModule} from 'ngx-flamegraph';
 import {Color, RawData} from 'ngx-flamegraph/lib/utils';
 import {ProfilerFrame} from 'protocol';
 import {Subscription} from 'rxjs';
@@ -21,6 +22,8 @@ import {SelectedDirective, SelectedEntry} from './timeline-visualizer.component'
   selector: 'ng-flamegraph-visualizer',
   templateUrl: './flamegraph-visualizer.component.html',
   styleUrls: ['./flamegraph-visualizer.component.scss'],
+  standalone: true,
+  imports: [NgxFlamegraphModule],
 })
 export class FlamegraphVisualizerComponent implements OnInit, OnDestroy {
   profilerBars: FlamegraphNode[] = [];

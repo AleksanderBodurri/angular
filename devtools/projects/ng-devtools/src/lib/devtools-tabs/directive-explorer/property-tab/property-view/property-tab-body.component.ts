@@ -6,16 +6,21 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {DirectivePosition} from 'protocol';
 
 import {IndexedNode} from '../../directive-forest/index-forest';
 import {FlatNode} from '../../property-resolver/element-property-resolver';
 
+import {PropertyViewComponent} from './property-view.component';
+
 @Component({
   templateUrl: './property-tab-body.component.html',
   selector: 'ng-property-tab-body',
   styleUrls: ['./property-tab-body.component.scss'],
+  standalone: true,
+  imports: [CommonModule, PropertyViewComponent]
 })
 export class PropertyTabBodyComponent {
   @Input() currentSelectedElement: IndexedNode|null;

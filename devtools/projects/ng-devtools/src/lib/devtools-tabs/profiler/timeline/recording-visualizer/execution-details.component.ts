@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component, Input} from '@angular/core';
 
 import {SelectedDirective} from './timeline-visualizer.component';
@@ -14,6 +15,8 @@ import {SelectedDirective} from './timeline-visualizer.component';
   selector: 'ng-execution-details',
   templateUrl: './execution-details.component.html',
   styleUrls: ['./execution-details.component.scss'],
+  standalone: true,
+  imports: [CommonModule]
 })
 export class ExecutionDetailsComponent {
   @Input() data: SelectedDirective[];

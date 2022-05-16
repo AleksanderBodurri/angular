@@ -7,7 +7,9 @@
  */
 
 import {Component, ElementRef, EventEmitter, Input, Output, ViewChild, ViewEncapsulation} from '@angular/core';
+import {RouterModule} from '@angular/router';
 
+import {HeavyComponent} from './heavy.component';
 import {ZippyComponent} from './zippy.component';
 
 @Component({
@@ -15,6 +17,8 @@ import {ZippyComponent} from './zippy.component';
   templateUrl: './demo-app.component.html',
   styleUrls: ['./demo-app.component.scss'],
   encapsulation: ViewEncapsulation.None,
+  imports: [RouterModule, HeavyComponent, ZippyComponent],
+  standalone: true
 })
 export class DemoAppComponent {
   @ViewChild(ZippyComponent) zippy: ZippyComponent;

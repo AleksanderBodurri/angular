@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {ProfilerFrame} from 'protocol';
 import {Subscription} from 'rxjs';
@@ -13,15 +14,18 @@ import {Subscription} from 'rxjs';
 import {Theme, ThemeService} from '../../../../theme-service';
 import {BarGraphFormatter, BargraphNode} from '../record-formatter/bargraph-formatter/index';
 
+import {BarChartComponent} from './bar-chart.component';
 import {formatDirectiveProfile} from './profile-formatter';
 import {SelectedDirective, SelectedEntry} from './timeline-visualizer.component';
 
 @Component({
+  imports: [CommonModule, BarChartComponent],
   selector: 'ng-bargraph-visualizer',
   templateUrl: './bargraph-visualizer.component.html',
   styleUrls: ['./bargraph-visualizer.component.scss'],
+  standalone: true,
 })
-export class BargraphVisualizerComponent implements OnInit, OnDestroy {
+export class BargraphVisualizerComponent {
   barColor: string;
   profileRecords: BargraphNode[];
 

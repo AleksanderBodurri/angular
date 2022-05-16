@@ -6,12 +6,18 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'ng-filter',
   templateUrl: './filter.component.html',
   styleUrls: ['./filter.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule]
 })
 export class FilterComponent {
   @Output() filter: EventEmitter<string> = new EventEmitter<string>();

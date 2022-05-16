@@ -12,7 +12,6 @@ ng_module(
     name = "app",
     srcs = [
         "app.component.ts",
-        "app.module.ts",
     ],
     angular_assets = [
         "app.component.html",

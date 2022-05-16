@@ -19,6 +19,7 @@ const fib = (n: number) => {
   selector: 'app-heavy',
   templateUrl: './heavy.component.html',
   styleUrls: ['./heavy.component.scss'],
+  standalone: true,
 })
 export class HeavyComponent {
   @Input()

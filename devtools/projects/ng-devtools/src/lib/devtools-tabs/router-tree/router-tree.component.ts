@@ -6,7 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {AfterViewInit, Component, ElementRef, Input, ViewChild} from '@angular/core';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatSelectModule} from '@angular/material/select';
 import * as d3 from 'd3';
 import {Events, MessageBus, Route} from 'protocol';
 
@@ -14,6 +17,8 @@ import {Events, MessageBus, Route} from 'protocol';
   selector: 'ng-router-tree',
   templateUrl: './router-tree.component.html',
   styleUrls: ['./router-tree.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatSelectModule]
 })
 export class RouterTreeComponent implements AfterViewInit {
   @ViewChild('svgContainer', {static: true}) private svgContainer: ElementRef;

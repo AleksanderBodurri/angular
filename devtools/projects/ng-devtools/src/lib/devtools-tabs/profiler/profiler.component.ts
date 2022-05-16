@@ -6,13 +6,21 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {MatDialog} from '@angular/material/dialog';
+import {FormsModule} from '@angular/forms';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {MatIconModule} from '@angular/material/icon';
+import {MatSelectModule} from '@angular/material/select';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {Events, MessageBus, ProfilerFrame} from 'protocol';
 import {Subject, Subscription} from 'rxjs';
 
 import {FileApiService} from './file-api-service';
 import {ProfilerImportDialogComponent} from './profiler-import-dialog.component';
+import {TimelineComponent} from './timeline/timeline.component';
 
 type State = 'idle'|'recording'|'visualizing';
 
@@ -23,6 +31,11 @@ const PROFILER_VERSION = 1;
   selector: 'ng-profiler',
   templateUrl: './profiler.component.html',
   styleUrls: ['./profiler.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule, MatDialogModule, MatIconModule, MatSelectModule, FormsModule, MatButtonModule,
+    MatCardModule, MatTooltipModule, ProfilerImportDialogComponent, TimelineComponent
+  ]
 })
 export class ProfilerComponent implements OnInit, OnDestroy {
   state: State = 'idle';

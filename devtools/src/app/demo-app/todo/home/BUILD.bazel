@@ -11,7 +11,7 @@ sass_binary(
 ng_module(
     name = "home",
     srcs = [
-        "home.module.ts",
+        "home.routes.ts",
         "sample.pipe.ts",
         "todo.component.ts",
         "todo.ts",

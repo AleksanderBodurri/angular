@@ -6,10 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {RouterModule} from '@angular/router';
 
+import {SamplePipe} from './sample.pipe';
 import {Todo} from './todo';
-import {TodoFilter} from './todos.pipe';
+import {TodoComponent} from './todo.component';
+import {TodoFilter, TodosFilter} from './todos.pipe';
 
 const fib = (n: number) => {
   if (n === 1 || n === 2) {
@@ -21,6 +25,8 @@ const fib = (n: number) => {
 @Component({
   templateUrl: 'todos.component.html',
   selector: 'app-todos',
+  imports: [RouterModule, CommonModule, TodoComponent, SamplePipe, TodosFilter],
+  standalone: true
 })
 export class TodosComponent implements OnInit, OnDestroy {
   todos: Todo[] = [

@@ -7,6 +7,7 @@
  */
 
 import {Component, ElementRef, ViewChild} from '@angular/core';
+import {DevToolsComponent as NgDevToolsComponent} from 'ng-devtools';
 import {Events, MessageBus, PriorityAwareMessageBus} from 'protocol';
 
 import {IFrameMessageBus} from '../../iframe-message-bus';
@@ -14,6 +15,8 @@ import {IFrameMessageBus} from '../../iframe-message-bus';
 @Component({
   templateUrl: './devtools-app.component.html',
   styleUrls: ['./devtools-app.component.scss'],
+  standalone: true,
+  imports: [NgDevToolsComponent],
   providers: [
     {
       provide: MessageBus,

@@ -7,10 +7,14 @@
  */
 
 import {animate, style, transition, trigger} from '@angular/animations';
+import {CommonModule} from '@angular/common';
 import {Component, OnDestroy, OnInit} from '@angular/core';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {Events, MessageBus} from 'protocol';
 import {interval} from 'rxjs';
 
+import {DevToolsTabsComponent} from './devtools-tabs/devtools-tabs.component';
 import {ThemeService} from './theme-service';
 
 @Component({
@@ -25,6 +29,8 @@ import {ThemeService} from './theme-service';
           transition(':leave', [style({opacity: 1}), animate('200ms', style({opacity: 0}))]),
         ]),
   ],
+  standalone: true,
+  imports: [CommonModule, DevToolsTabsComponent, MatProgressSpinnerModule, MatTooltipModule]
 })
 export class DevToolsComponent implements OnInit, OnDestroy {
   angularExists: boolean|null = null;

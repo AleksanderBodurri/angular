@@ -7,6 +7,7 @@
  */
 
 import {Component} from '@angular/core';
+import {RouterModule} from '@angular/router';
 
 @Component({
   selector: 'app-about',
@@ -16,6 +17,8 @@ import {Component} from '@angular/core';
     <a [routerLink]="">Home</a>
     <a [routerLink]="">Home</a>
   `,
+  standalone: true,
+  imports: [RouterModule]
 })
 export class AboutComponent {
 }

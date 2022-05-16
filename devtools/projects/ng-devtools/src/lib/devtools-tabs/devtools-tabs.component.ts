@@ -7,9 +7,14 @@
  */
 
 /// <reference types="resize-observer-browser" />
+import {CommonModule} from '@angular/common';
 import {AfterViewInit, Component, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {MatSlideToggleChange} from '@angular/material/slide-toggle';
-import {MatTabNav} from '@angular/material/tabs';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatMenuModule} from '@angular/material/menu';
+import {MatSlideToggleChange, MatSlideToggleModule} from '@angular/material/slide-toggle';
+import {MatTabNav, MatTabsModule} from '@angular/material/tabs';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {Events, MessageBus, Route} from 'protocol';
 import {Subscription} from 'rxjs';
 
@@ -17,12 +22,21 @@ import {ApplicationEnvironment} from '../application-environment/index';
 import {Theme, ThemeService} from '../theme-service';
 
 import {DirectiveExplorerComponent} from './directive-explorer/directive-explorer.component';
+import {ProfilerComponent} from './profiler/profiler.component';
+import {RouterTreeComponent} from './router-tree/router-tree.component';
 import {TabUpdate} from './tab-update/index';
 
 @Component({
   selector: 'ng-devtools-tabs',
   templateUrl: './devtools-tabs.component.html',
   styleUrls: ['./devtools-tabs.component.scss'],
+  standalone: true,
+  imports: [
+    MatTabsModule, MatIconModule, ProfilerComponent, RouterTreeComponent, CommonModule,
+    MatMenuModule, MatButtonModule, MatSlideToggleModule, MatTooltipModule,
+    DirectiveExplorerComponent
+  ],
+  providers: [TabUpdate]
 })
 export class DevToolsTabsComponent implements OnInit, OnDestroy, AfterViewInit {
   @Input() angularVersion: string|undefined = undefined;

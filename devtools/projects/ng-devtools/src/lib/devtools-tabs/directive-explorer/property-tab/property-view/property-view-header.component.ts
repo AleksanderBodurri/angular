@@ -7,11 +7,14 @@
  */
 
 import {Component, Input} from '@angular/core';
+import {MatToolbarModule} from '@angular/material/toolbar';
 
 @Component({
   selector: 'ng-property-view-header',
   templateUrl: './property-view-header.component.html',
   styleUrls: ['./property-view-header.component.scss'],
+  standalone: true,
+  imports: [MatToolbarModule]
 })
 export class PropertyViewHeaderComponent {
   @Input() directive: string;

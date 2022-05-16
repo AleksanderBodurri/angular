@@ -41,7 +41,7 @@ ng_module(
     name = "demo-app",
     srcs = [
         "demo-app.component.ts",
-        "demo-app.module.ts",
+        "demo-app.routes.ts",
         "heavy.component.ts",
         "zippy.component.ts",
     ],

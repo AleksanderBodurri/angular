@@ -12,7 +12,7 @@ ng_module(
     name = "devtools-app",
     srcs = [
         "devtools-app.component.ts",
-        "devtools-app.module.ts",
+        "devtools-app.routes.ts",
     ],
     angular_assets = [
         "devtools-app.component.html",

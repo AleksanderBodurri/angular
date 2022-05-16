@@ -12,6 +12,7 @@ import {Component, Input} from '@angular/core';
   selector: 'app-zippy',
   templateUrl: './zippy.component.html',
   styleUrls: ['./zippy.component.scss'],
+  standalone: true,
 })
 export class ZippyComponent {
   @Input() title: string;

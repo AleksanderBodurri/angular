@@ -6,8 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {Component} from '@angular/core';
-import {MatDialog} from '@angular/material/dialog';
+import {FormsModule} from '@angular/forms';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
+import {RouterModule} from '@angular/router';
 
 import {DialogComponent} from './dialog.component';
 
@@ -15,6 +20,16 @@ import {DialogComponent} from './dialog.component';
   selector: 'app-todo-demo',
   templateUrl: './app-todo.component.html',
   styleUrls: ['./app-todo.component.scss'],
+  imports: [
+    RouterModule,
+    FormsModule,
+    MatInputModule,
+    CommonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    DialogComponent,
+  ],
+  standalone: true
 })
 export class AppTodoComponent {
   name: string;

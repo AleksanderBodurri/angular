@@ -7,16 +7,23 @@
  */
 
 import {CdkDragDrop, moveItemInArray} from '@angular/cdk/drag-drop';
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {MatExpansionModule} from '@angular/material/expansion';
+import {MatIconModule} from '@angular/material/icon';
 import {DirectivePosition} from 'protocol';
 
 import {DirectivePropertyResolver, DirectiveTreeData} from '../../property-resolver/directive-property-resolver';
 import {FlatNode} from '../../property-resolver/element-property-resolver';
 
+import {PropertyViewTreeComponent} from './property-view-tree.component';
+
 @Component({
   selector: 'ng-property-view-body',
   templateUrl: './property-view-body.component.html',
   styleUrls: ['./property-view-body.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatExpansionModule, MatIconModule, PropertyViewTreeComponent]
 })
 export class PropertyViewBodyComponent {
   @Input() controller: DirectivePropertyResolver;

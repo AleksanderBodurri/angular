@@ -6,8 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {CdkVirtualScrollViewport} from '@angular/cdk/scrolling';
+import {CdkVirtualScrollViewport, ScrollingModule} from '@angular/cdk/scrolling';
+import {CommonModule} from '@angular/common';
 import {Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {Observable, Subscription} from 'rxjs';
 
 import {TabUpdate} from '../../tab-update/index';
@@ -20,6 +25,10 @@ const ITEM_WIDTH = 30;
   selector: 'ng-frame-selector',
   templateUrl: './frame-selector.component.html',
   styleUrls: ['./frame-selector.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule, MatCardModule, MatTooltipModule, MatIconModule, MatButtonModule, ScrollingModule
+  ]
 })
 export class FrameSelectorComponent implements OnInit, OnDestroy {
   @ViewChild('barContainer') barContainer: ElementRef;

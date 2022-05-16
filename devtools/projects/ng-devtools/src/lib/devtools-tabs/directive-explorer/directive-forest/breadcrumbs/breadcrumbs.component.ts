@@ -6,7 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, ViewChild,} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
 import {Subject} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 
@@ -16,6 +20,8 @@ import {FlatNode} from '../component-data-source';
   selector: 'ng-breadcrumbs',
   templateUrl: './breadcrumbs.component.html',
   styleUrls: ['./breadcrumbs.component.scss'],
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule]
 })
 export class BreadcrumbsComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() parents: FlatNode[];

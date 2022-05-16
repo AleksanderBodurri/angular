@@ -6,16 +6,22 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {CdkVirtualScrollViewport} from '@angular/cdk/scrolling';
+import {CdkVirtualScrollViewport, ScrollingModule} from '@angular/cdk/scrolling';
 import {FlatTreeControl} from '@angular/cdk/tree';
+import {CommonModule} from '@angular/common';
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild,} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatIconModule} from '@angular/material/icon';
 import {DevToolsNode, ElementPosition, Events, MessageBus} from 'protocol';
 import {Subscription} from 'rxjs';
 
 import {TabUpdate} from '../../tab-update/index';
 
+import {BreadcrumbsComponent} from './breadcrumbs/breadcrumbs.component';
 import {ComponentDataSource, FlatNode} from './component-data-source';
 import {isChildOf, parentCollapsed} from './directive-forest-utils';
+import {FilterComponent} from './filter/filter.component';
 import {IndexedNode} from './index-forest';
 
 @Component({
@@ -23,6 +29,16 @@ import {IndexedNode} from './index-forest';
   templateUrl: './directive-forest.component.html',
   styleUrls: ['./directive-forest.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    BreadcrumbsComponent,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    FilterComponent,
+    ScrollingModule,
+  ]
 })
 export class DirectiveForestComponent implements OnInit, OnDestroy {
   @Input()

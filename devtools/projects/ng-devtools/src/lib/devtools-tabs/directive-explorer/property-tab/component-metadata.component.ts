@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {CommonModule} from '@angular/common';
 import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
 import {ComponentType} from 'protocol';
 
@@ -17,6 +18,8 @@ import {ElementPropertyResolver} from '../property-resolver/element-property-res
   templateUrl: './component-metadata.component.html',
   styleUrls: ['./component-metadata.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [CommonModule]
 })
 export class ComponentMetadataComponent {
   @Input() currentSelectedComponent: ComponentType;

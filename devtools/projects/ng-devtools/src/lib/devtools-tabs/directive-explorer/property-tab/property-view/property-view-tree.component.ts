@@ -7,15 +7,25 @@
  */
 
 import {FlatTreeControl} from '@angular/cdk/tree';
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {MatIconModule} from '@angular/material/icon';
+import {MatTreeModule} from '@angular/material/tree';
 
 import {FlatNode} from '../../property-resolver/element-property-resolver';
 import {PropertyDataSource} from '../../property-resolver/property-data-source';
+
+import {PropertyEditorComponent} from './property-editor.component';
+import {PropertyPreviewComponent} from './property-preview.component';
 
 @Component({
   selector: 'ng-property-view-tree',
   templateUrl: './property-view-tree.component.html',
   styleUrls: ['./property-view-tree.component.scss'],
+  standalone: true,
+  imports: [
+    CommonModule, PropertyEditorComponent, PropertyPreviewComponent, MatTreeModule, MatIconModule
+  ]
 })
 export class PropertyViewTreeComponent {
   @Input() dataSource: PropertyDataSource;

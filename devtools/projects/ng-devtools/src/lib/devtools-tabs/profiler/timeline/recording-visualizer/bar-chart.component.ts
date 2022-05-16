@@ -7,7 +7,9 @@
  */
 
 import {animate, animateChild, query, stagger, style, transition, trigger} from '@angular/animations';
+import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {MatTooltipModule} from '@angular/material/tooltip';
 
 interface Data {
   label: string;
@@ -24,6 +26,8 @@ interface Data {
         [transition(':enter', [style({width: 0}), animate('.3s ease', style({width: '*'}))])]),
     trigger('stagger', [transition(':enter', [query(':enter', stagger('.1s', [animateChild()]))])]),
   ],
+  standalone: true,
+  imports: [CommonModule, MatTooltipModule]
 })
 export class BarChartComponent {
   @Input()
