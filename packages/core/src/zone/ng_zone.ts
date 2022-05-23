@@ -386,6 +386,10 @@ function forkInnerZoneWithAngularBehavior(zone: NgZonePrivate) {
     onInvokeTask:
         (delegate: ZoneDelegate, current: Zone, target: Zone, task: Task, applyThis: any,
          applyArgs: any): any => {
+          if (isDevToolsMessage(applyArgs)) {
+            return;
+          }
+
           try {
             onEnter(zone);
             return delegate.invokeTask(target, task, applyThis, applyArgs);
@@ -457,6 +461,20 @@ function onEnter(zone: NgZonePrivate) {
 function onLeave(zone: NgZonePrivate) {
   zone._nesting--;
   checkStable(zone);
+}
+
+function isDevToolsMessage(applyArgs: any) {
+  if (!Array.isArray(applyArgs)) {
+    return false;
+  }
+
+  if (applyArgs.length > 1) {
+    return false;
+  }
+
+  const isDevtoolsMessage = applyArgs[0] instanceof MessageEvent &&
+      applyArgs[0].data?.source?.startsWith('angular-devtools')
+  return isDevtoolsMessage;
 }
 
 /**

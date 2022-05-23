@@ -15,5 +15,9 @@ import {Router} from '@angular/router';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  constructor(public router: Router) {}
+  constructor(public router: Router) {
+    window.addEventListener('message', (event) => {
+      console.log(event);
+    });
+  }
 }
