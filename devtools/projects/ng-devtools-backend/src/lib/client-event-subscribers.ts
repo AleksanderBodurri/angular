@@ -65,9 +65,12 @@ export const subscribeToClientEvents = (messageBus: MessageBus<Events>): void =>
 //
 
 const getLatestInjectorGraphCallback = (messageBus: MessageBus<Events>) => () => {
+  const t0 = performance.now();
   const forestWithInjectorPaths =
       prepareForestForSerialization(
           initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true) as any;
+  const t1 = performance.now();
+  console.log(`Injector Tree ${t1 - t0} milliseconds.`);
   messageBus.emit('latestInjectorGraphView', [forestWithInjectorPaths]);
 };
 
@@ -87,13 +90,16 @@ const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) 
       // Pressing the refresh button means the user saw stuck UI.
       initializeOrGetDirectiveForestHooks().indexForest();
 
+      const t0 = performance.now();
+      const forest =
+          prepareForestForSerialization(
+              initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true) as any;
+      messageBus.emit('latestInjectorGraphView', [forest]);
+      const t1 = performance.now();
+      console.log(`Injector Tree took ${t1 - t0} milliseconds.`);
+
       if (!query) {
-        messageBus.emit('latestComponentExplorerView', [
-          {
-            forest: prepareForestForSerialization(
-                initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest()),
-          },
-        ]);
+        messageBus.emit('latestComponentExplorerView', [{forest}]);
         return;
       }
 
@@ -102,12 +108,7 @@ const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) 
 
 
       messageBus.emit('latestComponentExplorerView', [
-        {
-          forest: prepareForestForSerialization(
-              initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest()),
-          properties,
-          injector
-        },
+        {forest, properties, injector},
       ]);
     };
 
@@ -279,6 +280,7 @@ const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolu
 
         if (includeResolutionPath) {
           const resolutionPath: any[] = getInjectorResolutionPath(node.nativeElement);
+
           for (const injector of resolutionPath) {
             injector.owner = injector.owner.name;
           }

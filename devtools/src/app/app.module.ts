@@ -19,7 +19,7 @@ import {AppComponent} from './app.component';
 @Injectable()
 class SomeFeatureService {
   constructor() {
-    console.log(this)
+    console.log(this);
   }
 }
 
@@ -35,9 +35,9 @@ export class SomeComponent {
   constructor(private someFeatureService2: SomeFeatureService2) {}
 }
 
-@Directive({selector: '[appSomeDirective]'})
+@Directive({selector: '[appSomeDirective]', providers: [SomeFeatureService2]})
 export class SomeDirective {
-  constructor(private someFeatureService: SomeFeatureService) {
+  constructor() {
     console.log('some directive init');
   }
 }
@@ -46,7 +46,7 @@ export class SomeDirective {
 export class SomeFeatureModule2 {
   static init(): ModuleWithProviders<SomeFeatureModule2> {
     return {
-      ngModule: SomeFeatureModule2, providers: [SomeFeatureService2]
+      ngModule: SomeFeatureModule2, providers: []
     }
   }
 }

@@ -8,7 +8,9 @@ const typeToClass = {
   Module: 'node-module',
   ImportedModule: 'node-imported-module',
   Element: 'node-element',
-  NullInjector: 'node-null'
+  NullInjector: 'node-null',
+  Injector: 'node-injector',
+  Platform: 'node-platform'
 }
 
 

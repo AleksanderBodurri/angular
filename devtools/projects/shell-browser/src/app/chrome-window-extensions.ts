@@ -65,27 +65,18 @@ const chromeWindowExtensions = {
   },
   findInjector(args) {
     const {directivePosition, injectorParameter, injectorPosition} = JSON.parse(args);
-    const node = queryDirectiveForest(directivePosition.element, buildDirectiveForest());
+    const node = queryDirectiveForest(directivePosition, buildDirectiveForest());
     if (node === null) {
       console.error(`Cannot find element associated with node ${directivePosition}`);
       return undefined;
     }
 
-    const isDirective = directivePosition.directive !== undefined &&
-        node.directives[directivePosition.directive] &&
-        typeof node.directives[directivePosition.directive] === 'object';
+    const elementInjectorMetadata =
+        (window as any).ng.getElementInjectorMetadata(node.nativeElement)
+    const foundParameter = elementInjectorMetadata[injectorParameter.paramIndex];
 
-    const instance = isDirective ? node.directives[directivePosition.directive].instance :
-                                   node.component?.instance;
-    if (!instance) {
-      return;
-    }
-    const foundParameter = (window as any)
-                               ?.ng.getDirectiveMetadata(instance)
-                               ?.injectorParameters[injectorParameter.paramIndex];
-
-    const token = foundParameter.token;
-    const resolutionPath = (window as any)?.ng.traceTokenInjectorPath(node.nativeElement, token);
+    const resolutionPath =
+        (window as any)?.ng.traceTokenInjectorPath(node.nativeElement, foundParameter.token);
 
     let injector;
     if (injectorPosition.length == 2) {

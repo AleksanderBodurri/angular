@@ -10,7 +10,7 @@ import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
 
-import {SomeDirective, TooltipDirective} from './/tooltip.directive';
+import {TooltipDirective} from './/tooltip.directive';
 import {SamplePipe} from './sample.pipe';
 import {SomeComponent, TodoComponent} from './todo.component';
 import {TodosComponent} from './todos.component';
@@ -28,10 +28,8 @@ import {TodosFilter} from './todos.pipe';
       },
     ]),
   ],
-  declarations: [
-    SamplePipe, TodosComponent, TodoComponent, TodosFilter, TooltipDirective, SomeDirective,
-    SomeComponent
-  ],
+  declarations:
+      [SamplePipe, TodosComponent, TodoComponent, TodosFilter, TooltipDirective, SomeComponent],
   exports: [TodosComponent],
 })
 export class HomeModule {

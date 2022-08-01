@@ -20,7 +20,6 @@
       <ng-container *ngFor="let todo of todos | todosFilter: filterValue">
         <app-todo
           appTooltip
-          someDirective
           [todo]="todo"
           (delete)="onDelete($event)"
           (update)="onChange($event)"
@@ -30,7 +29,6 @@
 
         <some-cmp
           appTooltip
-          someDirective
         ></some-cmp>
       </ng-container>
 

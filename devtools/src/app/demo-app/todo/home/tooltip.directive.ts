@@ -35,8 +35,3 @@ export class TooltipDirective {
     }
   }
 }
-
-@Directive({selector: '[someDirective]'})
-export class SomeDirective {
-  _cdr = inject(ChangeDetectorRef);
-}

@@ -7,7 +7,7 @@
  */
 
 import {ChangeDetectionStrategy} from '../../change_detection/constants';
-import {InjectFlags, Provider, Type} from '../../core';
+import {InjectFlags, NgModuleRef as viewEngine_NgModuleRef, Provider, Type} from '../../core';
 import {Injector} from '../../di/injector';
 import {getInjectorDef} from '../../di/interface/defs';
 import {NullInjector} from '../../di/null_injector';
@@ -630,51 +630,55 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
   const tNode = tView.data[nodeIndex] as TNode;
   const injectorPath: any[] = [];
 
-  const debugNodes = debugNodeInjectorPath(context.lView!, tNode);
+  const debugNodes = getInjectorPath(context.lView!, tNode);
 
-  const debugNodeToInjector = (debugNode: any) =>
-      ({type: 'Element', owner: debugNode.instances[0].constructor})
+  const debugNodeToInjector = (debugNode: any) => ({type: 'Element', owner: debugNode.constructor})
 
   debugNodes.forEach((node: any) => {
     injectorPath.push(debugNodeToInjector(node));
   });
 
   let injector = (context.lView![INJECTOR] as any).parentInjector;
-  let ngModuleType = (context.lView![INJECTOR] as any).parentInjector.__defType__;
+  let ngModuleType =
+      injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self)?.instance?.constructor;
   if (ngModuleType === undefined) {
     return injectorPath;
   }
 
   while (injector !== undefined) {
-    if (injector.source === 'platform') {
-      injectorPath.push({
-        type: 'Module',
-        owner: ngModuleType,
-      });
-    }
-
-    if (ngModuleType !== undefined && ngModuleType.ɵmod) {
-      injectorPath.push({
-        type: 'Module',
-        owner: ngModuleType,
-      });
-    }
-
     if (injector instanceof NullInjector) {
       injectorPath.push({
         type: 'NullInjector',
         owner: injector.constructor,
       });
+      break;
+    } else if (injector.scopes?.has?.('platform')) {
+      injectorPath.push({
+        type: 'Platform',
+        owner: {name: 'Platform'},
+      });
+    } else if (injector.scopes?.has?.('environment') && injector.scopes?.has?.('root')) {
+      if (ngModuleType) {
+        injectorPath.push({type: 'Module', owner: ngModuleType});
+      } else {
+        injectorPath.push({type: 'Injector', owner: {name: injector.source}});
+      }
+    } else if (ngModuleType !== undefined && ngModuleType.ɵmod) {
+      injectorPath.push({
+        type: 'Module',
+        owner: ngModuleType,
+      });
     }
 
     injector = injector.parent;
+    const moduleRef = injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self);
 
     // skip hidden AppModule
-    if (injector?.source === 'AppModule' && injector.__defType__ === undefined) {
+    if (injector?.source === 'AppModule' && moduleRef === null) {
       injector = injector.parent;
     }
 
-    ngModuleType = injector?.__defType__;
+    ngModuleType = moduleRef?.instance?.constructor;
   }
 
   return injectorPath;
@@ -728,53 +732,70 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
   }
 
   let injector = (context.lView![INJECTOR] as any).parentInjector;
-  let ngModuleType = (context.lView![INJECTOR] as any).parentInjector.__defType__;
+  let ngModuleType =
+      injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self)?.instance?.constructor;
+
+  const findImportPathForTokenInModule = (moduleConstructor: any, tokenToTrace: any) => {
+    let foundModule = false;
+    let pathCursor: any = undefined;
+    let path: any[] = [];
+
+    const traceTokenInjectorPathVisitor = (provider: any, ngModule: any) => {
+      if (foundModule) {
+        const imports = getInjectorDef(ngModule)?.imports ?? [];
+
+        if (imports.find(
+                moduleImport =>
+                    (moduleImport as any).ngModule === pathCursor || moduleImport === pathCursor)) {
+          pathCursor = ngModule;
+          path.unshift(pathCursor);
+        }
+
+        return;
+      }
+
+      const foundToken = provider === tokenToTrace || provider.provide === tokenToTrace;
+      if (foundToken) {
+        foundModule = true;
+        pathCursor = ngModule;
+        path.unshift(pathCursor);
+      }
+    };
+
+    walkProviderTree(moduleConstructor, traceTokenInjectorPathVisitor, [], new Set());
+    return path.map((owner: any, index: number) => {
+      let type = index === 0 ? 'Module' : 'ImportedModule';
+      return {type, owner};
+    });
+  };
 
   while (injector !== undefined) {
-    if (injector.source === 'platform') {
-      injectorPath.push({type: 'Platform', owner: injector});
+    if (injector instanceof NullInjector) {
+      injectorPath.push({type: 'NullInjector', owner: injector.constructor});
+      break;
+    } else if (injector.scopes?.has?.('platform')) {
+      injectorPath.push({type: 'Platform', owner: injector.constructor});
 
       if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
         return injectorPath;
       }
-    }
+    } else if (injector.scopes?.has?.('environment') && injector.scopes?.has?.('root')) {
+      if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
+        const importPath = findImportPathForTokenInModule(ngModuleType, tokenToTrace);
 
-    if (ngModuleType !== undefined && ngModuleType.ɵmod) {
+        injectorPath.push({
+          type: 'Module',
+          owner: ngModuleType,
+          importedFrom: importPath[importPath.length - 1],
+          importPath
+        });
+
+        return injectorPath;
+      }
+
+      injectorPath.push({type: 'Module', owner: ngModuleType});
+    } else if (ngModuleType !== undefined && ngModuleType.ɵmod) {
       if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self) !== DEVTOOLS_NOT_FOUND) {
-        const findImportPathForTokenInModule = (moduleConstructor: any, tokenToTrace: any) => {
-          let foundModule = false;
-          let pathCursor: any = undefined;
-          let path: any[] = [];
-
-          const traceTokenInjectorPathVisitor = (provider: any, ngModule: any) => {
-            if (foundModule) {
-              const imports = getInjectorDef(ngModule)?.imports ?? [];
-
-              if (imports.find(
-                      moduleImport => (moduleImport as any).ngModule === pathCursor ||
-                          moduleImport === pathCursor)) {
-                pathCursor = ngModule;
-                path.unshift(pathCursor);
-              }
-
-              return;
-            }
-
-            const foundToken = provider === tokenToTrace || provider.provide === tokenToTrace;
-            if (foundToken) {
-              foundModule = true;
-              pathCursor = ngModule;
-              path.unshift(pathCursor);
-            }
-          };
-
-          walkProviderTree(moduleConstructor, traceTokenInjectorPathVisitor, [], new Set());
-          return path.map((owner: any, index: number) => {
-            let type = index === 0 ? 'Module' : 'ImportedModule';
-            return {type, owner};
-          });
-        };
-
         const importPath = findImportPathForTokenInModule(ngModuleType, tokenToTrace);
 
         injectorPath.push({
@@ -790,21 +811,50 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
       injectorPath.push({type: 'Module', owner: ngModuleType});
     }
 
-    if (injector instanceof NullInjector) {
-      injectorPath.push({type: 'NullInjector', owner: injector.constructor});
-    }
-
     injector = injector.parent;
+    const moduleRef = injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self);
 
     // skip hidden AppModule
-    if (injector?.source === 'AppModule' && injector.__defType__ === undefined) {
+    if (injector?.source === 'AppModule' && moduleRef === null) {
       injector = injector.parent;
     }
 
-    ngModuleType = injector?.__defType__;
+    ngModuleType = moduleRef.instance.constructor;
   }
 
   return injectorPath;
+}
+
+function getInjectorPath(lView: LView, tNode: TNode): DebugNode[] {
+  const path: DebugNode[] = [];
+  let injectorIndex = getInjectorIndex(tNode, lView);
+  if (injectorIndex === -1) {
+    // Looks like the current `TNode` does not have `NodeInjecetor` associated with it => look for
+    // parent NodeInjector.
+    const parentLocation = getParentInjectorLocation(tNode, lView);
+    if (parentLocation !== NO_PARENT_INJECTOR) {
+      // We found a parent, so start searching from the parent location.
+      injectorIndex = getParentInjectorIndex(parentLocation);
+      lView = getParentInjectorView(parentLocation, lView);
+    } else {
+      // No parents have been found, so there are no `NodeInjector`s to consult.
+    }
+  }
+  while (injectorIndex !== -1) {
+    ngDevMode && assertNodeInjector(lView, injectorIndex);
+    const tNode = lView[TVIEW].data[injectorIndex + NodeInjectorOffset.TNODE] as TNode;
+
+    path.push(lView[tNode.directiveStart]);
+
+    const parentLocation = lView[injectorIndex + NodeInjectorOffset.PARENT];
+    if (parentLocation === NO_PARENT_INJECTOR) {
+      injectorIndex = -1;
+    } else {
+      injectorIndex = getParentInjectorIndex(parentLocation);
+      lView = getParentInjectorView(parentLocation, lView);
+    }
+  }
+  return path;
 }
 
 function debugNodeInjectorPath(lView: LView, tNode: TNode): DebugNode[] {
@@ -835,45 +885,4 @@ function debugNodeInjectorPath(lView: LView, tNode: TNode): DebugNode[] {
     }
   }
   return path;
-}
-
-export function getNgModuleTree(rootElement: Element) {
-  const context = getLContext(rootElement);
-  if (context === null) {
-    return null;
-  }
-
-  const ngModuleRef = (context.lView![INJECTOR] as any).parentInjector.__defType__;
-  if (ngModuleRef === undefined) {
-    return null;
-  }
-
-  const injectorTree: any[] = [];
-  const traverseInjectorTree =
-      (ngModuleRef: any, children: any[] = []) => {
-        const importedModules = new Set<any>();
-        const collectImportedModules = (_provider: any, ngModule: any) => {
-          importedModules.add(ngModule);
-        };
-        walkProviderTree(ngModuleRef.instance.constructor, collectImportedModules, [], new Set());
-
-        const node: any = {
-          type: 'Module',
-          owner: ngModuleRef.instance.constructor,
-          children: (() => {
-            const childNodes: any[] = [];
-            (ngModuleRef.__children__ ?? []).forEach((moduleRef: any) => {
-              traverseInjectorTree(moduleRef, childNodes);
-            });
-
-            return childNodes;
-          })()
-        };
-
-        children.push(node);
-      }
-
-  traverseInjectorTree(ngModuleRef, injectorTree);
-
-  return injectorTree[0];
 }

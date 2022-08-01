@@ -134,8 +134,6 @@ export class R3Injector extends EnvironmentInjector {
 
   private injectorDefTypes: Set<Type<unknown>>;
 
-  __defType__: any|undefined = undefined;
-
   constructor(
       providers: Array<Provider|ImportedNgModuleProviders>, readonly parent: Injector,
       readonly source: string|null, readonly scopes: Set<InjectorScope>) {

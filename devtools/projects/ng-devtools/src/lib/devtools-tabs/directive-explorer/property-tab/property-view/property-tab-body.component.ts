@@ -24,7 +24,6 @@ export class PropertyTabBodyComponent {
     this.directives = this.getCurrentDirectives();
   };
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
-  @Output() inspectInjector = new EventEmitter<any>();
 
   directives: string[] = [];
 

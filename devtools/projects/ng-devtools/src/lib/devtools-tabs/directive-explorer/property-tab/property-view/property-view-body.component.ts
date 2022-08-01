@@ -25,7 +25,6 @@ export class PropertyViewBodyComponent {
   @Input() directiveStateControls: DirectiveTreeData;
 
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
-  @Output() inspectInjector = new EventEmitter<any>();
 
   constructor(private _messageBus: MessageBus<Events>) {}
 

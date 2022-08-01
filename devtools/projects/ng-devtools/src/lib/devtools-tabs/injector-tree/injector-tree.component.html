@@ -1,5 +1,3 @@
-<button class="reload-tree" (click)="reloadInjectorTree.emit()" mat-stroked-button>Load Injector Tree</button>
-
 <section class="injector-tree">
     <ul class="legend">
         <li>
@@ -13,6 +11,10 @@
         <li>
             Element
             <svg><g><circle class="node-element" r="6"></circle></g></svg>
+        </li>
+        <li>
+            Platform
+            <svg><g><circle class="node-platform" r="6"></circle></g></svg>
         </li>
     </ul>
     <section #injectorTree class="graph">

@@ -32,6 +32,28 @@
       & .node-module.selected {
         fill: #f05057;
       }
+
+      .node-injector {
+        stroke: #f05057;
+        fill: #f9c2c5;
+        stroke-width: 1px;
+      }
+  
+      & .node-injector:hover,
+      & .node-injector.selected {
+        fill: #f05057;
+      }
+      
+      .node-platform {
+        stroke: #50a5f0;
+        fill: #ffffff;
+        stroke-width: 2px;
+      }
+  
+      & .node-platform:hover,
+      & .node-platform.selected {
+        fill: #50a5f0;
+      }
   
       & .node-element {
         stroke: #28ab2c;

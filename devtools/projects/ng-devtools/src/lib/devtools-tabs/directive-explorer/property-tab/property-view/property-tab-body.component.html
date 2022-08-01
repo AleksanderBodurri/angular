@@ -1,5 +1,5 @@
 <ng-container *ngIf="currentSelectedElement">
   <div *ngFor="let directive of directives" class="explorer-panel">
-    <ng-property-view (inspectInjector)="inspectInjector.emit($event)" (inspect)="inspect.emit($event)" [directive]="directive"></ng-property-view>
+    <ng-property-view (inspect)="inspect.emit($event)" [directive]="directive"></ng-property-view>
   </div>
 </ng-container>

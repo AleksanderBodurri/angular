@@ -90,6 +90,9 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
     if (tab === 'Router Tree') {
       this._messageBus.emit('getRoutes');
     }
+    if (tab === 'Injector Tree') {
+      this.injectorTree = [...this.injectorTree];
+    }
   }
 
   toggleInspector(): void {
@@ -124,7 +127,9 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
     const injectorPaths: any[][] = [];
     const grabInjectorPaths =
         (node) => {
-          injectorPaths.push(node.resolutionPath.slice().reverse());
+          if (node.resolutionPath) {
+            injectorPaths.push(node.resolutionPath.slice().reverse());
+          }
           node.children.forEach(child => grabInjectorPaths(child));
         }
 

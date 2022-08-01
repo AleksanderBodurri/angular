@@ -139,7 +139,7 @@
             "headers": {
               // Keep in sync with the `firebase.json` file.
               // Note: Unlike in `firebase.json` we omit the `report-uri` for development.
-              "Content-Security-Policy": "require-trusted-types-for 'script'; trusted-types angular angular#bundler angular#unsafe-bypass aio#analytics google#safe goog#html"
+              "Content-Security-Policy": "require-trusted-types-for 'script'; trusted-types angular angular#bundler angular#unsafe-bypass angular#devtools aio#analytics google#safe goog#html"
             }
           },
           "configurations": {

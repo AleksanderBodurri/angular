@@ -20,7 +20,6 @@ import {ElementPropertyResolver, FlatNode} from '../../property-resolver/element
 export class PropertyViewComponent {
   @Input() directive: string;
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
-  @Output() inspectInjector = new EventEmitter<any>();
 
   constructor(
       private _nestedProps: ElementPropertyResolver,

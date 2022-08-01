@@ -79,9 +79,6 @@ export class NgModuleRef<T> extends viewEngine_NgModuleRef<T> implements Interna
                              }
                            ],
                            stringify(ngModuleType), new Set(['environment'])) as R3Injector;
-    if (ngDevMode) {
-      this._r3Injector.__defType__ = ngModuleType;
-    }
 
     // We need to resolve the injector types separately from the injector creation, because
     // the module might be trying to use this ref in its constructor for DI which will cause a
