@@ -116,8 +116,9 @@ export class DirectiveExplorerComponent implements OnInit, OnDestroy {
   subscribeToBackendEvents(): void {
     this._messageBus.on('latestComponentExplorerView', (view: ComponentExplorerView) => {
       this.currentSelectedElement = this._clickedElement;
-      if (view.properties && this.currentSelectedElement) {
-        this._propResolver.setProperties(this.currentSelectedElement, view.properties);
+      if (view.properties && this.currentSelectedElement && view.injector) {
+        this._propResolver.setProperties(
+            this.currentSelectedElement, view.properties, view.injector);
       }
     });
 
@@ -206,8 +207,7 @@ export class DirectiveExplorerComponent implements OnInit, OnDestroy {
   }
 
   inspectInjector({injectorParameter, directivePosition, injectorPosition}): void {
-    console.log({directivePosition, injectorParameter, injectorPosition}) this._appOperations
-        .inspectInjector(directivePosition, injectorParameter, injectorPosition);
+    this._appOperations.inspectInjector(directivePosition, injectorParameter, injectorPosition);
   }
 
   inspect({node, directivePosition}:

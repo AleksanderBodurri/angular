@@ -30,10 +30,6 @@ export class PropertyViewComponent {
     return this._nestedProps.getDirectiveController(this.directive);
   }
 
-  get directiveInjectorParameters(): any|void {
-    return this.controller?.directiveInjectorParameters;
-  }
-
   get directiveInputControls(): DirectiveTreeData|void {
     return this.controller?.directiveInputControls;
   }

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Attribute, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Host, Inject, Injectable, Injector, Input, Optional, Output, Self, SkipSelf, ViewContainerRef} from '@angular/core';
+import {Attribute, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Host, inject, Inject, Injectable, Injector, Input, Optional, Output, Self, SkipSelf, ViewContainerRef} from '@angular/core';
 
 import {Todo} from './todo';
 import {MY_TOKEN, TodosComponent} from './todos.component';
@@ -52,6 +52,13 @@ export class TodoComponent extends BaseTodo {
   @Output() update = new EventEmitter();
   @Output() delete = new EventEmitter();
 
+  _injectTest = inject(Test);
+  _injectTest2 = inject(Test2);
+  _injectInjector = inject(Injector);
+  _injectToken = inject(MY_TOKEN);
+  _injectElement = inject(ElementRef);
+
+
   constructor(
       @Attribute('some-attribute') private someAttribute: string, private _test: Test,
       private _test2: Test2, private injector: Injector, private _todos: TodosComponent,
@@ -77,4 +84,13 @@ export class TodoComponent extends BaseTodo {
   enableEditMode(): void {
     this.editMode = true;
   }
+}
+
+
+@Component({selector: 'some-cmp', template: `Some Component`})
+
+export class SomeComponent {
+  _injectToken = inject(MY_TOKEN);
+
+  constructor() {}
 }

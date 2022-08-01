@@ -391,6 +391,25 @@ export function getDirectiveMetadata(directiveOrComponentInstance: any): Compone
   return null;
 }
 
+export function getElementInjectorMetadata(element: Element) {
+  const context = getLContext(element);
+  if (context === null) return null;
+
+  const target = element as any as RElement;
+  const nodeIndex = findViaNativeElement(context.lView!, target);
+  const tView = context.lView![TVIEW];
+  const tNode = tView.data[nodeIndex] as TNode;
+  const injectorMetadata = tNode.__ngInjectorMetadata__;
+
+  const elementInjectorMetadata: any[] = [];
+
+  injectorMetadata.forEach((metadata) => {
+    elementInjectorMetadata.push(metadata);
+  });
+
+  return elementInjectorMetadata;
+}
+
 /**
  * Retrieve map of local references.
  *
@@ -610,7 +629,6 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
   const tView = context.lView![TVIEW];
   const tNode = tView.data[nodeIndex] as TNode;
   const injectorPath: any[] = [];
-  const nodeInjector = getInjector(element) as NodeInjector;
 
   const debugNodes = debugNodeInjectorPath(context.lView!, tNode);
 
@@ -621,32 +639,42 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
     injectorPath.push(debugNodeToInjector(node));
   });
 
-  const ngModuleRef = (context.lView![INJECTOR] as any).__ngModuleInjector__;
-  if (ngModuleRef === undefined) {
+  let injector = (context.lView![INJECTOR] as any).parentInjector;
+  let ngModuleType = (context.lView![INJECTOR] as any).parentInjector.__defType__;
+  if (ngModuleType === undefined) {
     return injectorPath;
   }
 
-  let parent = ngModuleRef;
-  while (parent !== undefined) {
-    if (parent instanceof NgModuleRef) {
+  while (injector !== undefined) {
+    if (injector.source === 'platform') {
       injectorPath.push({
         type: 'Module',
-        owner: parent.instance.constructor,
+        owner: ngModuleType,
       });
     }
 
-    if (parent.scope === 'platform') {
-      injectorPath.push({type: 'Platform', owner: parent.constructor})
+    if (ngModuleType !== undefined && ngModuleType.ɵmod) {
+      injectorPath.push({
+        type: 'Module',
+        owner: ngModuleType,
+      });
     }
 
-    if (parent instanceof NullInjector) {
+    if (injector instanceof NullInjector) {
       injectorPath.push({
         type: 'NullInjector',
-        owner: parent.constructor,
-      })
+        owner: injector.constructor,
+      });
     }
 
-    parent = parent._parent ?? parent.parent;
+    injector = injector.parent;
+
+    // skip hidden AppModule
+    if (injector?.source === 'AppModule' && injector.__defType__ === undefined) {
+      injector = injector.parent;
+    }
+
+    ngModuleType = injector?.__defType__;
   }
 
   return injectorPath;
@@ -699,16 +727,19 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
     }
   }
 
-  const ngModuleRef = (context.lView![INJECTOR] as any).__ngModuleInjector__;
-  if (ngModuleRef === undefined) {
-    return injectorPath;
-  }
+  let injector = (context.lView![INJECTOR] as any).parentInjector;
+  let ngModuleType = (context.lView![INJECTOR] as any).parentInjector.__defType__;
 
-  let parent = ngModuleRef;
-  while (parent !== undefined) {
-    if (parent instanceof NgModuleRef) {
-      const injector = parent._r3Injector as any;
+  while (injector !== undefined) {
+    if (injector.source === 'platform') {
+      injectorPath.push({type: 'Platform', owner: injector});
 
+      if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
+        return injectorPath;
+      }
+    }
+
+    if (ngModuleType !== undefined && ngModuleType.ɵmod) {
       if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self) !== DEVTOOLS_NOT_FOUND) {
         const findImportPathForTokenInModule = (moduleConstructor: any, tokenToTrace: any) => {
           let foundModule = false;
@@ -744,12 +775,11 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
           });
         };
 
-        const importPath =
-            findImportPathForTokenInModule(parent.instance.constructor, tokenToTrace);
+        const importPath = findImportPathForTokenInModule(ngModuleType, tokenToTrace);
 
         injectorPath.push({
           type: 'Module',
-          owner: parent.instance.constructor,
+          owner: ngModuleType,
           importedFrom: importPath[importPath.length - 1],
           importPath
         });
@@ -757,22 +787,21 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
         return injectorPath;
       }
 
-      injectorPath.push({type: 'Module', owner: parent.instance.constructor});
+      injectorPath.push({type: 'Module', owner: ngModuleType});
     }
 
-    if (parent.scope === 'platform') {
-      injectorPath.push({type: 'Platform', owner: parent});
-
-      if (parent.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
-        return injectorPath;
-      }
+    if (injector instanceof NullInjector) {
+      injectorPath.push({type: 'NullInjector', owner: injector.constructor});
     }
 
-    if (parent instanceof NullInjector) {
-      injectorPath.push({type: 'NullInjector', owner: parent.constructor});
+    injector = injector.parent;
+
+    // skip hidden AppModule
+    if (injector?.source === 'AppModule' && injector.__defType__ === undefined) {
+      injector = injector.parent;
     }
 
-    parent = parent._parent ?? parent.parent;
+    ngModuleType = injector?.__defType__;
   }
 
   return injectorPath;
@@ -814,7 +843,7 @@ export function getNgModuleTree(rootElement: Element) {
     return null;
   }
 
-  const ngModuleRef = (context.lView![INJECTOR] as any).__ngModuleInjector__;
+  const ngModuleRef = (context.lView![INJECTOR] as any).parentInjector.__defType__;
   if (ngModuleRef === undefined) {
     return null;
   }

@@ -12,7 +12,7 @@ import {global} from '../../util/global';
 import {setProfiler} from '../profiler';
 
 import {applyChanges} from './change_detection_utils';
-import {getComponent, getContext, getDirectiveMetadata, getDirectives, getHostElement, getInjector, getInjectorResolutionPath, getListeners, getNgModuleTree, getOwningComponent, getRootComponents, traceTokenInjectorPath} from './discovery_utils';
+import {getComponent, getContext, getDirectiveMetadata, getDirectives, getElementInjectorMetadata, getHostElement, getInjector, getInjectorResolutionPath, getListeners, getOwningComponent, getRootComponents, traceTokenInjectorPath} from './discovery_utils';
 
 
 
@@ -62,7 +62,7 @@ export function publishDefaultGlobalUtils() {
     publishGlobalUtil('applyChanges', applyChanges);
     publishGlobalUtil('getInjectorResolutionPath', getInjectorResolutionPath);
     publishGlobalUtil('traceTokenInjectorPath', traceTokenInjectorPath);
-    publishGlobalUtil('getNgModuleTree', getNgModuleTree);
+    publishGlobalUtil('getElementInjectorMetadata', getElementInjectorMetadata);
   }
 }
 

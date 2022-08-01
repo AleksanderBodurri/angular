@@ -26,6 +26,9 @@ export function createInjector(
     additionalProviders: StaticProvider[]|null = null, name?: string): Injector {
   const injector =
       createInjectorWithoutInjectorInstances(defType, parent, additionalProviders, name);
+  if (ngDevMode) {
+    injector.__defType__ = defType;
+  }
   injector.resolveInjectorInitializers();
   return injector;
 }

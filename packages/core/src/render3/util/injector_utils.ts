@@ -25,6 +25,7 @@ export function getParentInjectorIndex(parentLocation: RelativeInjectorLocation)
       assertGreaterThan(
           parentInjectorIndex, HEADER_OFFSET,
           'Parent injector must be pointing past HEADER_OFFSET.');
+
   return (parentLocation as any as number) & RelativeInjectorLocationFlags.InjectorIndexMask;
 }
 

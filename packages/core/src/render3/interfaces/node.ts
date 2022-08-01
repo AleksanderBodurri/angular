@@ -7,6 +7,7 @@
  */
 import {KeyValueArray} from '../../util/array_utils';
 import {TStylingRange} from '../interfaces/styling';
+
 import {TIcu} from './i18n';
 import {CssSelector} from './projection';
 import {RNode} from './renderer_dom';
@@ -325,6 +326,8 @@ export type TConstantsOrFactory = TConstants|TConstantsFactory;
  * see: https://en.wikipedia.org/wiki/Flyweight_pattern for more on the Flyweight pattern
  */
 export interface TNode {
+  __ngInjectorMetadata__: Map<any, any>;
+
   /** The type of the TNode. See TNodeType. */
   type: TNodeType;
 

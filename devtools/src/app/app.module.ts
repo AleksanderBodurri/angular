@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Injectable, InjectionToken, ModuleWithProviders, NgModule} from '@angular/core';
+import {Component, Directive, Injectable, InjectionToken, ModuleWithProviders, NgModule} from '@angular/core';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {RouterModule} from '@angular/router';
 import {ApplicationEnvironment, ApplicationOperations} from 'ng-devtools';
@@ -32,9 +32,14 @@ class SomeFeatureService2 {
 
 @Component({template: `<div>some component</div>`, selector: 'app-some-component'})
 export class SomeComponent {
-  constructor(
-      private someFeatureService: SomeFeatureService,
-      private someFeatureService2: SomeFeatureService2) {}
+  constructor(private someFeatureService2: SomeFeatureService2) {}
+}
+
+@Directive({selector: '[appSomeDirective]'})
+export class SomeDirective {
+  constructor(private someFeatureService: SomeFeatureService) {
+    console.log('some directive init');
+  }
 }
 
 @NgModule({providers: [SomeFeatureService]})
@@ -47,8 +52,8 @@ export class SomeFeatureModule2 {
 }
 
 @NgModule({
-  declarations: [SomeComponent],
-  exports: [SomeComponent],
+  declarations: [SomeComponent, SomeDirective],
+  exports: [SomeComponent, SomeDirective],
   imports: [SomeFeatureModule2.init()],
   providers: [SomeFeatureService]
 })

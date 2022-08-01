@@ -79,6 +79,9 @@ export class NgModuleRef<T> extends viewEngine_NgModuleRef<T> implements Interna
                              }
                            ],
                            stringify(ngModuleType), new Set(['environment'])) as R3Injector;
+    if (ngDevMode) {
+      this._r3Injector.__defType__ = ngModuleType;
+    }
 
     // We need to resolve the injector types separately from the injector creation, because
     // the module might be trying to use this ref in its constructor for DI which will cause a
@@ -161,6 +164,7 @@ class EnvironmentNgModuleRefAdapter extends viewEngine_NgModuleRef<null> {
 export function createEnvironmentInjector(
     providers: Array<Provider|ImportedNgModuleProviders>, parent: EnvironmentInjector,
     debugName: string|null = null): EnvironmentInjector {
+  console.log('create env injector');
   const adapter = new EnvironmentNgModuleRefAdapter(providers, parent, debugName);
   return adapter.injector;
 }

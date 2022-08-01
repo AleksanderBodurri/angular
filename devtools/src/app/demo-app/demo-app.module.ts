@@ -6,19 +6,27 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {CUSTOM_ELEMENTS_SCHEMA, Injector, NgModule} from '@angular/core';
+import {CUSTOM_ELEMENTS_SCHEMA, inject, Injector, NgModule, Pipe, PipeTransform} from '@angular/core';
 import {createCustomElement} from '@angular/elements';
-import {RouterModule} from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import {initializeMessageBus} from 'ng-devtools-backend';
 
 import {ZoneUnawareIFrameMessageBus} from '../../zone-unaware-iframe-message-bus';
 
-import {DemoAppComponent} from './demo-app.component';
+import {Car, DemoAppComponent, Engine, SomeService} from './demo-app.component';
 import {HeavyComponent} from './heavy.component';
 import {ProvidedInDemoAppModule, ProvidedInModule4} from './todo/app-todo.component';
 import {ZippyComponent} from './zippy.component';
 
+@Pipe({name: 'somePipe'})
+export class SomePipe implements PipeTransform {
+  router = inject(Router)
 
+  transform(value: any, ...args: any[]): any {
+    console.log(this.router);
+    return value;
+  }
+}
 
 @NgModule({})
 export class Module5 {
@@ -44,8 +52,18 @@ export class Module1 {
 }
 
 @NgModule({
-  providers: [ProvidedInDemoAppModule],
-  declarations: [DemoAppComponent, HeavyComponent],
+  providers: [
+    ProvidedInDemoAppModule, {provide: Engine, useClass: Engine}, {
+      provide: Car,
+      useFactory: () => {
+        const engine = inject(Engine);
+
+        return new Car(engine);
+      }
+    },
+    SomeService
+  ],
+  declarations: [DemoAppComponent, HeavyComponent, SomePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   exports: [DemoAppComponent],
   imports: [

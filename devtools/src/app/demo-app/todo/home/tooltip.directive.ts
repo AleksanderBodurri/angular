@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Attribute, Directive, ElementRef, HostListener, SkipSelf} from '@angular/core';
+import {Attribute, ChangeDetectorRef, Directive, ElementRef, HostListener, inject, SkipSelf} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 
-import {Test3} from './todo.component';
 
 @Directive({selector: '[appTooltip]', providers: []})
 export class TooltipDirective {
@@ -21,11 +21,9 @@ export class TooltipDirective {
     },
   };
 
-  constructor(
-      @Attribute('class') private c: string, @SkipSelf() elementRef: ElementRef,
-      private _test3: Test3) {
-    // setInterval(() => this.nested.child.grandchild.prop++, 500);
-  }
+  _ar = inject(ActivatedRoute);
+
+  constructor(@Attribute('class') private c: string, @SkipSelf() elementRef: ElementRef) {}
 
   @HostListener('click')
   handleClick(): void {
@@ -36,4 +34,9 @@ export class TooltipDirective {
       delete (this as any).extraProp;
     }
   }
+}
+
+@Directive({selector: '[someDirective]'})
+export class SomeDirective {
+  _cdr = inject(ChangeDetectorRef);
 }

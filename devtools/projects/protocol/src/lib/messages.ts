@@ -109,6 +109,7 @@ export interface ComponentExplorerViewQuery {
 export interface ComponentExplorerView {
   forest: DevToolsNode[];
   properties?: DirectivesProperties;
+  injector?: any
 }
 
 export interface InjectorGraphViewQuery {

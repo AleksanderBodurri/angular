@@ -6,7 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectorRef, Component, EventEmitter, InjectionToken, OnDestroy, OnInit, Output} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, inject, InjectionToken, OnDestroy, OnInit, Output} from '@angular/core';
+import {Router} from '@angular/router';
 export const MY_TOKEN = new InjectionToken('my token');
 
 import {Todo} from './todo';
@@ -46,7 +47,9 @@ export class TodosComponent implements OnInit, OnDestroy {
 
   private hashListener: EventListenerOrEventListenerObject;
 
-  constructor(private cdRef: ChangeDetectorRef) {}
+  cdRef = inject(ChangeDetectorRef);
+  router = inject(Router);
+
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {

@@ -21,46 +21,64 @@ enum ChangeDetectionStrategy {
 }
 
 import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from './interfaces';
-import {createShallowSerializedDescriptor, PropertyData, TerminalType} from './state-serializer/serialized-descriptor-factory';
 
 const ngDebug = () => (window as any).ng;
 
 export const getLatestComponentState =
-    (query: ComponentExplorerViewQuery, directiveForest?: ComponentTreeNode[]):
-        DirectivesProperties|undefined => {
-          // if a directive forest is passed in we don't have to build the forest again.
-          directiveForest = directiveForest ?? buildDirectiveForest();
+    (query: ComponentExplorerViewQuery,
+     directiveForest?: ComponentTreeNode[]): [DirectivesProperties|undefined, any|undefined] => {
+      // if a directive forest is passed in we don't have to build the forest again.
+      directiveForest = directiveForest ?? buildDirectiveForest();
 
-          const node = queryDirectiveForest(query.selectedElement, directiveForest);
-          if (!node) {
-            return;
-          }
+      const node = queryDirectiveForest(query.selectedElement, directiveForest);
+      if (!node) {
+        return [undefined, undefined];
+      }
 
-          const result: DirectivesProperties = {};
+      const directivesProperties: DirectivesProperties = {};
 
-          const populateResultSet = (dir: DirectiveInstanceType|ComponentInstanceType) => {
-            if (query.propertyQuery.type === PropertyQueryTypes.All) {
-              result[dir.name] = {
-                props: serializeDirectiveState(dir.instance),
-                metadata: getDirectiveMetadata(dir.instance),
-              };
-            }
-            if (query.propertyQuery.type === PropertyQueryTypes.Specified) {
-              result[dir.name] = {
-                props: deeplySerializeSelectedProperties(
-                    dir.instance, query.propertyQuery.properties[dir.name] || []),
-                metadata: getDirectiveMetadata(dir.instance),
-              };
-            }
+      const populateResultSet = (dir: DirectiveInstanceType|ComponentInstanceType) => {
+        if (query.propertyQuery.type === PropertyQueryTypes.All) {
+          directivesProperties[dir.name] = {
+            props: serializeDirectiveState(dir.instance),
+            metadata: getDirectiveMetadata(dir.instance),
           };
+        }
+        if (query.propertyQuery.type === PropertyQueryTypes.Specified) {
+          directivesProperties[dir.name] = {
+            props: deeplySerializeSelectedProperties(
+                dir.instance, query.propertyQuery.properties[dir.name] || []),
+            metadata: getDirectiveMetadata(dir.instance),
+          };
+        }
+      };
 
-          node.directives.forEach(populateResultSet);
-          if (node.component) {
-            populateResultSet(node.component);
+      node.directives.forEach(populateResultSet);
+      if (node.component) {
+        populateResultSet(node.component);
+      }
+
+      let injectorMetadata = (window as any).ng?.getElementInjectorMetadata?.(node.nativeElement);
+      if (injectorMetadata) {
+        injectorMetadata = injectorMetadata.map((injectorParameter: any, index: number) => {
+          if (injectorParameter.token.ngMetadataName === 'InjectionToken') {
+            return {
+              token: injectorParameter.token.constructor.name,
+                  value: injectorParameter?.value?.constructor?.name,
+                  flags: injectorParameter.flags, paramIndex: index
+            }
           }
 
-          return result;
-        };
+          return {
+            token: injectorParameter.token.name, value: injectorParameter.value.constructor.name,
+                flags: injectorParameter.flags, paramIndex: index
+          }
+        });
+      }
+
+
+      return [directivesProperties, injectorMetadata];
+    };
 
 const enum DirectiveMetadataKey {
   INPUTS = 'inputs',

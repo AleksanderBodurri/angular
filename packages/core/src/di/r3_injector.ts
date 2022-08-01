@@ -134,6 +134,8 @@ export class R3Injector extends EnvironmentInjector {
 
   private injectorDefTypes: Set<Type<unknown>>;
 
+  __defType__: any|undefined = undefined;
+
   constructor(
       providers: Array<Provider|ImportedNgModuleProviders>, readonly parent: Injector,
       readonly source: string|null, readonly scopes: Set<InjectorScope>) {
@@ -158,6 +160,8 @@ export class R3Injector extends EnvironmentInjector {
 
     this.injectorDefTypes =
         new Set(this.get(INJECTOR_DEF_TYPES.multi, EMPTY_ARRAY, InjectFlags.Self));
+
+    console.log(this);
   }
 
   /**
@@ -195,6 +199,7 @@ export class R3Injector extends EnvironmentInjector {
   override runInContext<ReturnT>(fn: () => ReturnT): ReturnT {
     this.assertNotDestroyed();
 
+    // console.log('setting current injector', this);
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
     try {
@@ -210,6 +215,7 @@ export class R3Injector extends EnvironmentInjector {
       flags = InjectFlags.Default): T {
     this.assertNotDestroyed();
     // Set the injection context.
+    // console.log('setting current injector', this);
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
     try {
@@ -268,6 +274,7 @@ export class R3Injector extends EnvironmentInjector {
 
   /** @internal */
   resolveInjectorInitializers() {
+    // console.log('setting current injector', this);
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
     try {

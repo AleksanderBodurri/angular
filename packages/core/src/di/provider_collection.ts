@@ -255,7 +255,8 @@ export function walkProviderTree(
 
       // Provider to eagerly instantiate `defType` via `INJECTOR_INITIALIZER`.
       visitor(
-          {provide: ENVIRONMENT_INITIALIZER, useValue: () => inject(defType!), multi: true}, defType);
+          {provide: ENVIRONMENT_INITIALIZER, useValue: () => inject(defType!), multi: true},
+          defType);
     }
 
     // Next, include providers listed on the definition itself.
@@ -276,6 +277,7 @@ export function walkProviderTree(
       defType !== container &&
       (container as InjectorTypeWithProviders<any>).providers !== undefined);
 }
+(window as any).walkProviderTree = walkProviderTree;
 
 function validateProvider(
     provider: SingleProvider, providers: SingleProvider[], containerType: Type<unknown>): void {

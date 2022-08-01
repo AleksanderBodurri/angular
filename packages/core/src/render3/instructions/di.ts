@@ -11,6 +11,8 @@ import {ɵɵinject} from '../../di/injector_compatibility';
 import {ProviderToken} from '../../di/provider_token';
 import {getOrCreateInjectable} from '../di';
 import {TDirectiveHostNode} from '../interfaces/node';
+import {HOST} from '../interfaces/view';
+import {profiler, ProfilerEvent} from '../profiler';
 import {getCurrentTNode, getLView} from '../state';
 
 /**
@@ -49,6 +51,24 @@ export function ɵɵdirectiveInject<T>(token: ProviderToken<T>, flags = InjectFl
     return ɵɵinject(token, flags);
   }
   const tNode = getCurrentTNode();
+
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    const injectionFlags = {
+      optional: !!(flags & InjectFlags.Optional),
+      self: !!(flags & InjectFlags.Self),
+      skipSelf: !!(flags & InjectFlags.SkipSelf),
+      host: !!(flags & InjectFlags.Host),
+    }
+
+    const value = getOrCreateInjectable<T>(
+        tNode as TDirectiveHostNode, lView, resolveForwardRef(token), flags);
+
+    tNode?.__ngInjectorMetadata__.set(token, {token, value, flags: injectionFlags});
+
+    return value;
+  }
+
+
   return getOrCreateInjectable<T>(
       tNode as TDirectiveHostNode, lView, resolveForwardRef(token), flags);
 }

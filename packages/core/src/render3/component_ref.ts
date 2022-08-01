@@ -88,10 +88,6 @@ class ChainedInjector implements Injector {
     console.log({injector, parentInjector})
   }
 
-  get __ngModuleInjector__() {
-    return this.parentInjector;
-  }
-
   get<T>(token: ProviderToken<T>, notFoundValue?: T, flags?: InjectFlags): T {
     const value = this.injector.get<T|typeof NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR>(
         token, NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR, flags);

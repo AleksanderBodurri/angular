@@ -210,6 +210,8 @@ class TNode implements ITNode {
       public styleBindings: TStylingRange,                                           //
   ) {}
 
+  __ngInjectorMetadata__ = new Map();
+
   /**
    * Return a human debug version of the set of `NodeInjector`s which will be consulted when
    * resolving tokens from this `TNode`.

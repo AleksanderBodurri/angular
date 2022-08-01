@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Inject} from '@angular/core';
+import {Component, ElementRef, inject, Inject, Injector, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 
 import {foo} from './app.module';
@@ -16,8 +16,15 @@ import {foo} from './app.module';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   foo = 'bar';
 
+  injector = inject(Injector);
+
   constructor(public router: Router, @Inject(foo) _foo: string) {}
+
+  ngOnInit(): void {
+    console.log('getting element ref');
+    this.injector.get(ElementRef);
+  }
 }
