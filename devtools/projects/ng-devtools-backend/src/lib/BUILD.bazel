@@ -112,6 +112,7 @@ ts_library(
         ":utils",
         "//devtools/projects/ng-devtools-backend/src/lib/component-inspector",
         "//devtools/projects/ng-devtools-backend/src/lib/hooks",
+        "//devtools/projects/ng-devtools-backend/src/lib/hooks:identity_tracker",
         "//devtools/projects/ng-devtools-backend/src/lib/state-serializer",
         "//devtools/projects/protocol",
         "@npm//rxjs",

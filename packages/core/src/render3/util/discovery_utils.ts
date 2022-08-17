@@ -401,13 +401,7 @@ export function getElementInjectorMetadata(element: Element) {
   const tNode = tView.data[nodeIndex] as TNode;
   const injectorMetadata = tNode.__ngInjectorMetadata__;
 
-  const elementInjectorMetadata: any[] = [];
-
-  injectorMetadata.forEach((metadata) => {
-    elementInjectorMetadata.push(metadata);
-  });
-
-  return elementInjectorMetadata;
+  return [...injectorMetadata.values()];
 }
 
 /**
@@ -632,10 +626,10 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
 
   const debugNodes = getInjectorPath(context.lView!, tNode);
 
-  const debugNodeToInjector = (debugNode: any) => ({type: 'Element', owner: debugNode.constructor})
-
+  const debugNodeToInjector = (debugNode: any) => ({type: 'Element', owner: debugNode})
   debugNodes.forEach((node: any) => {
-    injectorPath.push(debugNodeToInjector(node));
+    const elementInjector = debugNodeToInjector(node);
+    injectorPath.push(elementInjector);
   });
 
   let injector = (context.lView![INJECTOR] as any).parentInjector;
@@ -655,13 +649,13 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
     } else if (injector.scopes?.has?.('platform')) {
       injectorPath.push({
         type: 'Platform',
-        owner: {name: 'Platform'},
+        owner: injector.constructor,
       });
     } else if (injector.scopes?.has?.('environment') && injector.scopes?.has?.('root')) {
       if (ngModuleType) {
         injectorPath.push({type: 'Module', owner: ngModuleType});
       } else {
-        injectorPath.push({type: 'Injector', owner: {name: injector.source}});
+        injectorPath.push({type: 'Injector', owner: injector.constructor});
       }
     } else if (ngModuleType !== undefined && ngModuleType.ɵmod) {
       injectorPath.push({
@@ -826,7 +820,7 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
 }
 
 function getInjectorPath(lView: LView, tNode: TNode): DebugNode[] {
-  const path: DebugNode[] = [];
+  const path: any[] = [];
   let injectorIndex = getInjectorIndex(tNode, lView);
   if (injectorIndex === -1) {
     // Looks like the current `TNode` does not have `NodeInjecetor` associated with it => look for
@@ -840,11 +834,14 @@ function getInjectorPath(lView: LView, tNode: TNode): DebugNode[] {
       // No parents have been found, so there are no `NodeInjector`s to consult.
     }
   }
+
   while (injectorIndex !== -1) {
     ngDevMode && assertNodeInjector(lView, injectorIndex);
     const tNode = lView[TVIEW].data[injectorIndex + NodeInjectorOffset.TNODE] as TNode;
 
-    path.push(lView[tNode.directiveStart]);
+    const rawValue = lView[tNode.index];
+    const native = unwrapRNode(rawValue)
+    path.push(native);
 
     const parentLocation = lView[injectorIndex + NodeInjectorOffset.PARENT];
     if (parentLocation === NO_PARENT_INJECTOR) {

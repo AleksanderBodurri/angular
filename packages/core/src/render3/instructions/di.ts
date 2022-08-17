@@ -6,14 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import {InjectFlags, resolveForwardRef} from '../../di';
-import {assertInjectImplementationNotEqual} from '../../di/inject_switch';
+import {assertInjectImplementationNotEqual, getInjectContext} from '../../di/inject_switch';
 import {ɵɵinject} from '../../di/injector_compatibility';
 import {ProviderToken} from '../../di/provider_token';
 import {getOrCreateInjectable} from '../di';
 import {TDirectiveHostNode} from '../interfaces/node';
 import {HOST} from '../interfaces/view';
 import {profiler, ProfilerEvent} from '../profiler';
-import {getCurrentTNode, getLView} from '../state';
+import {getCurrentDirectiveDef, getCurrentDirectiveIndex, getCurrentTNode, getLView, getTView} from '../state';
 
 /**
  * Returns the value associated to the given token from the injectors.
@@ -51,6 +51,7 @@ export function ɵɵdirectiveInject<T>(token: ProviderToken<T>, flags = InjectFl
     return ɵɵinject(token, flags);
   }
   const tNode = getCurrentTNode();
+  const tView = getTView();
 
   if (typeof ngDevMode === 'undefined' || ngDevMode) {
     const injectionFlags = {
@@ -63,7 +64,10 @@ export function ɵɵdirectiveInject<T>(token: ProviderToken<T>, flags = InjectFl
     const value = getOrCreateInjectable<T>(
         tNode as TDirectiveHostNode, lView, resolveForwardRef(token), flags);
 
-    tNode?.__ngInjectorMetadata__.set(token, {token, value, flags: injectionFlags});
+    const injectionContext = getInjectContext();
+
+    tNode?.__ngInjectorMetadata__.set(
+        token, {token, value, flags: injectionFlags, context: injectionContext});
 
     return value;
   }

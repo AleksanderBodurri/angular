@@ -13,14 +13,19 @@ const typeToClass = {
   Platform: 'node-platform'
 }
 
-
 export class InjectorTreeGraph {
   nodes: InjectorTreeGraphNode[] = []
   edges: InjectorTreeGraphEdges[] = [];
+  private tooltip: any;
 
-  constructor(private _containerElement: HTMLElement, private _graphElement: HTMLElement) {}
+  constructor(
+      private _containerElement: HTMLElement,
+      private _graphElement: HTMLElement,
+  ) {}
 
   private _nodeClickListeners: any[] = [];
+  private _currentInjectorGraph: any;
+  private d3 = d3;
 
   onNodeClick(cb: (pointerEvent: PointerEvent, node: d3.Node) => void): void {
     this._nodeClickListeners.push(cb);
@@ -29,27 +34,37 @@ export class InjectorTreeGraph {
   update(injectorGraph: any) {
     this._nodeClickListeners = [];
     this.render(injectorGraph);
+    this._currentInjectorGraph = injectorGraph;
   }
 
   render(injectorGraph): void {
     // cleanup old render
-    d3.select(this._graphElement).selectAll('*').remove();
+    this.tooltip?.remove?.();
+    this.d3.select(this._graphElement).selectAll('*').remove();
 
-    const tree = d3.tree();
-    const svg = d3.select(this._containerElement);
+    const tree = this.d3.tree();
+    const svg = this.d3.select(this._containerElement);
     svg.attr('height', 500).attr('width', 500);
 
-    const g = d3.select(this._graphElement);
-    (window as any).g = g;
-
+    const g = this.d3.select(this._graphElement);
     const svgPadding = 20;
 
     // Compute the new tree layout.
-    tree.nodeSize([50, 145]);
+    tree.nodeSize([70, 200]);
+    tree.separation((a, b) => {
+      return 2;
+    });
 
     const root: any = injectorGraph[0];
 
-    const nodes = tree(d3.hierarchy(root, (d) => d.children));
+    const nodes = tree(this.d3.hierarchy(root, (d) => d.children));
+
+    // Define the div for the tooltip
+    this.tooltip = this.d3.select('body')
+                       .append('div')
+                       .attr('class', 'tooltip')
+                       .style('opacity', 0)
+                       .style('padding', '0');
 
     g.selectAll('.link')
         .data(nodes.descendants().slice(1))
@@ -74,6 +89,16 @@ export class InjectorTreeGraph {
                 (pointerEvent, node) => {
                   this._nodeClickListeners.forEach(listener => listener(pointerEvent, node));
                 })
+            .on('mouseover',
+                (e, node) => {
+                  const owner = node.data.injector?.owner ?? node.data.owner;
+                  this.tooltip.style('padding', '4px 8px').transition().style('opacity', 0.9);
+                  this.tooltip.html(owner)
+                      .style('left', e.pageX + 8 + 'px')
+                      .style('top', e.pageY + 8 + 'px');
+                })
+            .on('mouseout', () => this.tooltip.transition().style('opacity', 0))
+
             .attr('transform', (d) => `translate(${d.y},${d.x})`);
 
     node.append('circle')
@@ -100,8 +125,15 @@ export class InjectorTreeGraph {
                 })
         .attr('text-anchor', (d) => (d.children ? 'end' : 'start'))
         .text((d) => {
-          const label = d.data.injector?.owner ?? d.data.owner;
-          return label.length > 20 ? label.slice(0, 17) + '...' : label;
+          if (d.data.injector?.type === 'Element' || d.data.type === 'Element') {
+            const owner = d.data.injector?.owner ?? d.data.owner;
+            const label = owner.split('[')[0];
+
+            return label.length > 30 ? label.slice(0, 27) + '...' : label;
+          } else {
+            const label = d.data.injector?.owner ?? d.data.owner;
+            return label.length > 30 ? label.slice(0, 27) + '...' : label;
+          }
         });
 
     // reset transform

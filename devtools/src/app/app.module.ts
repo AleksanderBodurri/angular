@@ -6,9 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Directive, Injectable, InjectionToken, ModuleWithProviders, NgModule} from '@angular/core';
+import {DOCUMENT} from '@angular/common';
+import {HttpClientModule} from '@angular/common/http';
+import {Component, Directive, inject, Injectable, InjectionToken, ModuleWithProviders, NgModule} from '@angular/core';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {RouterModule} from '@angular/router';
+import {Router, RouterModule} from '@angular/router';
 import {ApplicationEnvironment, ApplicationOperations} from 'ng-devtools';
 
 import {DemoApplicationEnvironment} from '../demo-application-environment';
@@ -18,28 +20,22 @@ import {AppComponent} from './app.component';
 
 @Injectable()
 class SomeFeatureService {
-  constructor() {
-    console.log(this);
-  }
+  router = inject(Router)
 }
 
 @Injectable()
 class SomeFeatureService2 {
-  constructor() {
-    console.log(this);
-  }
+  router = inject(Router)
 }
 
 @Component({template: `<div>some component</div>`, selector: 'app-some-component'})
 export class SomeComponent {
-  constructor(private someFeatureService2: SomeFeatureService2) {}
+  doc = inject(DOCUMENT);
 }
 
-@Directive({selector: '[appSomeDirective]', providers: [SomeFeatureService2]})
+@Directive({selector: '[appSomeDirective]', providers: [SomeFeatureService]})
 export class SomeDirective {
-  constructor() {
-    console.log('some directive init');
-  }
+  featureService2 = inject(SomeFeatureService);
 }
 
 @NgModule({providers: [SomeFeatureService]})
@@ -77,7 +73,7 @@ export const foo = new InjectionToken('foo');
         loadChildren: () => import('./demo-app/demo-app.module').then((m) => m.DemoAppModule),
       },
     ]),
-    SomeFeatureModule
+    SomeFeatureModule, HttpClientModule
   ],
   providers: [
     {
@@ -93,7 +89,4 @@ export const foo = new InjectionToken('foo');
   bootstrap: [AppComponent],
 })
 export class AppModule {
-  constructor() {
-    (window as any).AppModule = AppModule;
-  }
 }

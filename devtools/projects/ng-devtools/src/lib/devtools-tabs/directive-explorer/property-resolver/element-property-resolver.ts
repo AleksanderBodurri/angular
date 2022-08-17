@@ -28,7 +28,7 @@ export interface Property {
 @Injectable()
 export class ElementPropertyResolver {
   private _directivePropertiesController = new Map<string, DirectivePropertyResolver>();
-  private _injectorMetadata: any[] = [];
+  private _injectorMetadata: any;
 
   constructor(private _messageBus: MessageBus<Events>) {}
 
@@ -36,13 +36,23 @@ export class ElementPropertyResolver {
     this._directivePropertiesController = new Map();
   }
 
-  get injectorMetadata(): any[] {
+  get injectorMetadata(): any {
     return this._injectorMetadata;
   }
 
   setProperties(indexedNode: IndexedNode, data: DirectivesProperties, injector: any): void {
     this._flushDeletedProperties(data);
-    this._injectorMetadata = injector;
+
+    this._injectorMetadata = {};
+    debugger
+    injector.forEach(injectorParameter => {
+      const context = injectorParameter.context.split('_Factory')[0];
+      if (!this._injectorMetadata[context]) {
+        this._injectorMetadata[context] = [];
+      }
+
+      this._injectorMetadata[context].push(injectorParameter);
+    });
 
     Object.keys(data).forEach((key) => {
       const controller = this._directivePropertiesController.get(key);

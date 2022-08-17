@@ -23,7 +23,6 @@ export class SomePipe implements PipeTransform {
   router = inject(Router)
 
   transform(value: any, ...args: any[]): any {
-    console.log(this.router);
     return value;
   }
 }

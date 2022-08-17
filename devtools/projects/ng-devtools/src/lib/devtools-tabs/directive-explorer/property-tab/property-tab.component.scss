@@ -74,15 +74,28 @@ ng-property-view-body {
     }
     
     .injector-param {
-      list-style: none;
       display: flex;
-      margin: 0;
-      padding: 0;
-      padding-left: 1rem;
-      gap: 0.25rem;
-      font-size: .8rem;
-      height: 25px;
       align-items: center;
+
+      .details {
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        width: 200px;
+        height: 90px;
+        flex-shrink: 0;
+        align-items: center;
+        border-right: 1px solid #e8e8e8;
+      }
+
+      ng-resolution-path {
+        width: 100%;
+        overflow: auto;
+      }
+
+      .parameter {
+        width: 100%;
+      }
     
       .icon {
         display: flex;
@@ -228,5 +241,23 @@ ng-property-view-body {
         fill: #35a0ff;
       }
     }
+  }
+}
+
+mat-toolbar {
+  padding-left: 10px;
+  display: block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  line-height: 25px;
+  font-size: 11px;
+  font-weight: 500;
+  height: auto;
+}
+
+
+:host-context(.dark-theme) {
+  .mat-toolbar {
+    background: #161515;
   }
 }

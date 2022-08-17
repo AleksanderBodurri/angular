@@ -51,6 +51,11 @@
       (change)="showCommentNodes = $event.checked"
       (click)="$event.stopPropagation()">Show comment nodes</mat-slide-toggle>
   </div>
+  <div mat-menu-item disableRipple>
+    <mat-slide-toggle
+      (change)="toggleSiblingElementCollapse($event)"
+      (click)="$event.stopPropagation()">Collapse sibling injectors</mat-slide-toggle>
+  </div>
 </mat-menu>
 
 <mat-menu #info="matMenu">

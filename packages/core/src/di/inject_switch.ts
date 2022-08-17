@@ -42,6 +42,21 @@ export function setInjectImplementation(
   return previous;
 }
 
+let _injectContext: any;
+export function getInjectContext() {
+  return _injectContext;
+}
+
+
+/**
+ * Sets the current inject implementation.
+ */
+export function setInjectContext(injectContext: any) {
+  const previous = _injectContext;
+  _injectContext = injectContext;
+  return previous;
+}
+
 
 /**
  * Injects `root` tokens in limp mode.

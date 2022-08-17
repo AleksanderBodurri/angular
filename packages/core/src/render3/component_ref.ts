@@ -84,9 +84,7 @@ function getNamespace(elementName: string): string|null {
  * injector. Used primarily when creating components or embedded views dynamically.
  */
 class ChainedInjector implements Injector {
-  constructor(private injector: Injector, private parentInjector: Injector) {
-    console.log({injector, parentInjector})
-  }
+  constructor(private injector: Injector, private parentInjector: Injector) {}
 
   get<T>(token: ProviderToken<T>, notFoundValue?: T, flags?: InjectFlags): T {
     const value = this.injector.get<T|typeof NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR>(

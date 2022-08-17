@@ -21,6 +21,13 @@ import {TabUpdate} from './tab-update/index';
 
 type Tab = 'Components'|'Profiler'|'Router Tree'|'Injector Tree';
 
+interface InjectorNode {
+  type: string;
+  owner: any;
+  node: {resolutionPath: any[];};
+  id: string;
+}
+
 @Component({
   selector: 'ng-devtools-tabs',
   templateUrl: './devtools-tabs.component.html',
@@ -49,6 +56,8 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
 
   latestSHA = '';
 
+  collapseSiblingElementInjector = false;
+
   constructor(
       public tabUpdate: TabUpdate, public themeService: ThemeService,
       private _messageBus: MessageBus<Events>,
@@ -72,7 +81,10 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
     });
 
     this._messageBus.on('latestInjectorGraphView', (forestWithInjectorPaths) => {
+      const t0 = performance.now();
       this.injectorTreeReloaded(forestWithInjectorPaths);
+      const t1 = performance.now();
+      console.log(`Resolution path parsing took ${t1 - t0} milliseconds.`);
     });
   }
 
@@ -119,23 +131,42 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
                      this._messageBus.emit('disableTimingAPI');
   }
 
+  toggleSiblingElementCollapse(change: MatSlideToggleChange): void {
+    this.collapseSiblingElementInjector = change.checked;
+    this.reloadInjectorTree();
+  }
+
   reloadInjectorTree() {
     this._messageBus.emit('getLatestInjectorGraphView');
   }
 
   injectorTreeReloaded(forestWithInjectorPaths: DevToolsNode[]): void {
-    const injectorPaths: any[][] = [];
+    const injectorPaths: {node: DevToolsNode, path: any[]}[] = [];
     const grabInjectorPaths =
         (node) => {
           if (node.resolutionPath) {
-            injectorPaths.push(node.resolutionPath.slice().reverse());
+            injectorPaths.push({node, path: node.resolutionPath.slice().reverse()});
           }
+
           node.children.forEach(child => grabInjectorPaths(child));
         }
 
     grabInjectorPaths(forestWithInjectorPaths[0]);
 
-    const equalNode = (a, b) => a.owner === b.owner && a.type === b.type;
+
+    const equalNode = (a: InjectorNode, b: InjectorNode): boolean => {
+      if (this.collapseSiblingElementInjector && a.type === 'Element' && b.type === 'Element' &&
+          a.owner === b.owner && a.node.resolutionPath.length === b.node.resolutionPath.length &&
+          a.id !== b.id) {
+        const [_aElementInjector, ...aInjectors] = a.node.resolutionPath;
+        const [_bElementInjector, ...bInjectors] = b.node.resolutionPath;
+
+        return aInjectors.every(({id}, idx) => bInjectors[idx].id === id);
+      }
+
+      return a.id === b.id;
+    };
+
     const pathExists = (path, value):
         any => {
           let i = 0;
@@ -151,9 +182,13 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
         }
 
     const injectorTree: any = [];
-    for (const path of injectorPaths) {
+    for (const {path, node} of injectorPaths) {
       let currentLevel = injectorTree;
+
       for (const injector of path) {
+        if (injector['type'] === 'Element') {
+          injector.node = node;
+        }
         let existingPath = pathExists(currentLevel, injector);
 
         if (existingPath) {
@@ -165,14 +200,12 @@ export class DevToolsTabsComponent implements OnInit, OnDestroy {
           injector,
           children: [],
         });
+
         currentLevel = currentLevel[currentLevel.length - 1].children;
       }
     }
 
-    this.injectorTree = injectorTree;
-  }
 
-  setInjectorDebugTabFocus(injectorParameter: any): void {
-    console.log(injectorParameter);
+    this.injectorTree = injectorTree;
   }
 }

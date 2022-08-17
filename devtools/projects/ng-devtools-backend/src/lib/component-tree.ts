@@ -24,68 +24,70 @@ import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from '.
 
 const ngDebug = () => (window as any).ng;
 
-export const getLatestComponentState =
-    (query: ComponentExplorerViewQuery,
-     directiveForest?: ComponentTreeNode[]): [DirectivesProperties|undefined, any|undefined] => {
-      // if a directive forest is passed in we don't have to build the forest again.
-      directiveForest = directiveForest ?? buildDirectiveForest();
-
-      const node = queryDirectiveForest(query.selectedElement, directiveForest);
-      if (!node) {
-        return [undefined, undefined];
-      }
-
-      const directivesProperties: DirectivesProperties = {};
-
-      const populateResultSet = (dir: DirectiveInstanceType|ComponentInstanceType) => {
-        if (query.propertyQuery.type === PropertyQueryTypes.All) {
-          directivesProperties[dir.name] = {
-            props: serializeDirectiveState(dir.instance),
-            metadata: getDirectiveMetadata(dir.instance),
-          };
-        }
-        if (query.propertyQuery.type === PropertyQueryTypes.Specified) {
-          directivesProperties[dir.name] = {
-            props: deeplySerializeSelectedProperties(
-                dir.instance, query.propertyQuery.properties[dir.name] || []),
-            metadata: getDirectiveMetadata(dir.instance),
-          };
-        }
-      };
-
-      node.directives.forEach(populateResultSet);
-      if (node.component) {
-        populateResultSet(node.component);
-      }
-
-      let injectorMetadata = (window as any).ng?.getElementInjectorMetadata?.(node.nativeElement);
+export const getInjectorMetadataFromElement =
+    (element: Node|undefined) => {
+      let injectorMetadata = (window as any).ng?.getElementInjectorMetadata?.(element);
       if (injectorMetadata) {
-        injectorMetadata = injectorMetadata.map((injectorParameter: any, index: number) => {
+        return injectorMetadata.map((injectorParameter: any, index: number) => {
           if (injectorParameter.token.ngMetadataName === 'InjectionToken') {
             return {
-              token: injectorParameter.token.constructor.name,
+              token:
+                  `${injectorParameter.token.constructor.name}(${injectorParameter.token._desc})`,
+                  context: injectorParameter.context.factory.name,
                   value: injectorParameter?.value?.constructor?.name,
                   flags: injectorParameter.flags, paramIndex: index
             }
           }
 
           return {
-            token: injectorParameter.token.name, value: injectorParameter.value.constructor.name,
-                flags: injectorParameter.flags, paramIndex: index
+            token: injectorParameter.token.name, context: injectorParameter.context.factory.name,
+                value: injectorParameter.value.constructor.name, flags: injectorParameter.flags,
+                paramIndex: index
           }
         });
       }
+      return [];
+    }
 
+export const getLatestComponentState =
+    (query: ComponentExplorerViewQuery, directiveForest?: ComponentTreeNode[]):
+        [DirectivesProperties|undefined, any|undefined] => {
+          // if a directive forest is passed in we don't have to build the forest again.
+          directiveForest = directiveForest ?? buildDirectiveForest();
 
-      return [directivesProperties, injectorMetadata];
-    };
+          const node = queryDirectiveForest(query.selectedElement, directiveForest);
+          if (!node) {
+            return [undefined, undefined];
+          }
 
-const enum DirectiveMetadataKey {
-  INPUTS = 'inputs',
-  OUTPUTS = 'outputs',
-  ENCAPSULATION = 'encapsulation',
-  ON_PUSH = 'onPush',
-}
+          const directivesProperties: DirectivesProperties = {};
+
+          const populateResultSet = (dir: DirectiveInstanceType|ComponentInstanceType) => {
+            if (query.propertyQuery.type === PropertyQueryTypes.All) {
+              directivesProperties[dir.name] = {
+                props: serializeDirectiveState(dir.instance),
+                metadata: getDirectiveMetadata(dir.instance),
+              };
+            }
+
+            if (query.propertyQuery.type === PropertyQueryTypes.Specified) {
+              directivesProperties[dir.name] = {
+                props: deeplySerializeSelectedProperties(
+                    dir.instance, query.propertyQuery.properties[dir.name] || []),
+                metadata: getDirectiveMetadata(dir.instance),
+              };
+            }
+          };
+
+          node.directives.forEach(populateResultSet);
+          if (node.component) {
+            populateResultSet(node.component);
+          }
+
+          let injectorMetadata = getInjectorMetadataFromElement(node.nativeElement!);
+
+          return [directivesProperties, injectorMetadata];
+        };
 
 // Gets directive metadata. For newer versions of Angular (v12+) it uses
 // the global `getDirectiveMetadata`. For prior versions of the framework

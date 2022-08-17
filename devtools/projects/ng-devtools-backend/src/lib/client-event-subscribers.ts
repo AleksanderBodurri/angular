@@ -7,14 +7,15 @@
  */
 
 import {ComponentExplorerViewQuery, ComponentType, DevToolsNode, DirectivePosition, DirectiveType, ElementPosition, Events, InjectorGraphViewQuery, MessageBus, ProfilerFrame,} from 'protocol';
-import {debounceTime} from 'rxjs/operators';
+import {debounceTime, first} from 'rxjs/operators';
 
 import {appIsAngularInDevMode, appIsAngularIvy, appIsSupportedAngularVersion, getAngularVersion,} from './angular-check';
 import {ComponentInspector} from './component-inspector/component-inspector';
-import {getLatestComponentState, queryDirectiveForest, updateState} from './component-tree';
+import {getInjectorMetadataFromElement, getLatestComponentState, queryDirectiveForest, updateState} from './component-tree';
 import {unHighlight} from './highlighter';
 import {disableTimingAPI, enableTimingAPI, initializeOrGetDirectiveForestHooks} from './hooks';
 import {start as startProfiling, stop as stopProfiling} from './hooks/capture';
+import {IndexedNode} from './hooks/identity-tracker';
 import {ComponentTreeNode} from './interfaces';
 import {setConsoleReference} from './set-console-reference';
 import {serializeDirectiveState} from './state-serializer/state-serializer';
@@ -84,33 +85,63 @@ const shutdownCallback = (messageBus: MessageBus<Events>) => () => {
   messageBus.destroy();
 };
 
-const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) =>
-    (query?: ComponentExplorerViewQuery) => {
-      // We want to force re-indexing of the component tree.
-      // Pressing the refresh button means the user saw stuck UI.
-      initializeOrGetDirectiveForestHooks().indexForest();
+const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) => (
+    query?: ComponentExplorerViewQuery) => {
+  // We want to force re-indexing of the component tree.
+  // Pressing the refresh button means the user saw stuck UI.
+  initializeOrGetDirectiveForestHooks().indexForest();
 
-      const t0 = performance.now();
-      const forest =
-          prepareForestForSerialization(
-              initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true) as any;
-      messageBus.emit('latestInjectorGraphView', [forest]);
-      const t1 = performance.now();
-      console.log(`Injector Tree took ${t1 - t0} milliseconds.`);
+  const t0 = performance.now();
+  const forest =
+      prepareForestForSerialization(
+          initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true) as any;
+  messageBus.emit('latestInjectorGraphView', [forest]);
+  const t1 = performance.now();
+  console.log(`Injector Tree took ${t1 - t0} milliseconds.`);
 
-      if (!query) {
-        messageBus.emit('latestComponentExplorerView', [{forest}]);
-        return;
-      }
+  if (!query) {
+    messageBus.emit('latestComponentExplorerView', [{forest}]);
+    return;
+  }
 
-      const [properties, injector] = getLatestComponentState(
-          query, initializeOrGetDirectiveForestHooks().getDirectiveForest());
+  const [properties, injector] =
+      getLatestComponentState(query, initializeOrGetDirectiveForestHooks().getDirectiveForest());
 
+  injector.forEach(parameter => {
+    const node = queryDirectiveForest(
+        query.selectedElement, initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest());
+    if (node === null) {
+      console.error(`Cannot find element associated with node ${query.selectedElement}`);
+      return undefined;
+    }
 
-      messageBus.emit('latestComponentExplorerView', [
-        {forest, properties, injector},
-      ]);
+    const elementInjectorMetadata =
+        (window as any).ng.getElementInjectorMetadata(node.nativeElement)
+    const foundParameter = elementInjectorMetadata[parameter.paramIndex];
+
+    const resolutionPath =
+        (window as any)?.ng.traceTokenInjectorPath(node.nativeElement, foundParameter.token);
+
+    const serializeResolutionPath = (injectors: any[]) => {
+      (injectors ?? []).forEach(injector => {
+        injector.owner = injector.owner.name;
+        if (injector.type === 'Module' ||
+            injector.type === 'ImportedModule' && injector.importPath) {
+          serializeResolutionPath(injector.importPath);
+        }
+      });
     };
+
+    serializeResolutionPath(resolutionPath);
+
+    parameter.resolutionPath = resolutionPath;
+  });
+
+
+  messageBus.emit('latestComponentExplorerView', [
+    {forest, properties, injector},
+  ]);
+};
 
 const checkForAngularCallback = (messageBus: MessageBus<Events>) => () =>
     checkForAngular(messageBus);
@@ -251,18 +282,27 @@ export interface SerializableComponentTreeNode extends
 }
 
 
-const getInjectorResolutionPath =
+const getInjectorResolutionPath = (element: Node|undefined) => {
+  return (window as any).ng.getInjectorResolutionPath(element);
+};
+const getDirectives = (element: Node|undefined) => {
+  return (window as any).ng.getDirectives(element);
+};
+const getComponent =
     (element: Node|undefined) => {
-      return (window as any).ng.getInjectorResolutionPath(element);
+      return (window as any).ng.getComponent(element);
     }
+
+const injectorMap = new WeakMap();
 
 // Here we drop properties to prepare the tree for serialization.
 // We don't need the component instance, so we just traverse the tree
 // and leave the component name.
-const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolutionPath = false):
-    SerializableComponentTreeNode[] => {
+const prepareForestForSerialization =
+    (roots: IndexedNode[], includeResolutionPath = false): SerializableComponentTreeNode[] => {
       return roots.map((node) => {
         const serializedNode = {
+          position: node.position,
           element: node.element,
           component: node.component ? {
             name: node.component.name,
@@ -282,8 +322,30 @@ const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolu
           const resolutionPath: any[] = getInjectorResolutionPath(node.nativeElement);
 
           for (const injector of resolutionPath) {
-            injector.owner = injector.owner.name;
+            if (injectorMap.has(injector.owner)) {
+              injector.id = injectorMap.get(injector.owner);
+            } else {
+              const uuid = crypto.randomUUID();
+              injectorMap.set(injector.owner, uuid);
+              injector.id = uuid;
+            }
+
+            if (injector.type === 'Element') {
+              let directives = getDirectives(injector.owner);
+              if (!(injector.owner instanceof Comment)) {
+                directives =
+                    [getComponent(injector.owner), ...directives].filter(directive => !!directive);
+              }
+
+              const [firstDirective, ...restOfDirectives] = directives.map(d => d.constructor.name);
+              injector.owner = restOfDirectives.length === 0 ?
+                  firstDirective :
+                  `${firstDirective}[${restOfDirectives.join(', ')}]`;
+            } else {
+              injector.owner = injector.owner.name;
+            }
           }
+
           serializedNode['resolutionPath'] = resolutionPath;
         }
 

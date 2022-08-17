@@ -7,7 +7,7 @@
  */
 
 import {isForwardRef, resolveForwardRef} from '../di/forward_ref';
-import {injectRootLimpMode, setInjectImplementation} from '../di/inject_switch';
+import {getInjectContext, injectRootLimpMode, setInjectContext, setInjectImplementation} from '../di/inject_switch';
 import {Injector} from '../di/injector';
 import {InjectorMarkers} from '../di/injector_marker';
 import {InjectFlags} from '../di/interface/injector';
@@ -614,6 +614,7 @@ export function getNodeInjectable(
     }
     const previousIncludeViewProviders = setIncludeViewProviders(factory.canSeeViewProviders);
     factory.resolving = true;
+    const previousInjectContext = setInjectContext(factory);
     const previousInjectImplementation =
         factory.injectImpl ? setInjectImplementation(factory.injectImpl) : null;
     const success = enterDI(lView, tNode, InjectFlags.Default);
@@ -634,6 +635,7 @@ export function getNodeInjectable(
         registerPreOrderHooks(index, tData[index] as DirectiveDef<any>, tView);
       }
     } finally {
+      setInjectContext(previousInjectContext);
       previousInjectImplementation !== null &&
           setInjectImplementation(previousInjectImplementation);
       setIncludeViewProviders(previousIncludeViewProviders);

@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
-import {DirectivePosition, Events, MessageBus} from 'protocol';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {DirectivePosition} from 'protocol';
 
 import {InjectorTreeGraph} from '../../injector-tree/injector-tree-graph';
 import {IndexedNode} from '../directive-forest/index-forest';
@@ -19,9 +19,6 @@ import {ElementPropertyResolver, FlatNode} from '../property-resolver/element-pr
   styleUrls: ['./property-tab.component.scss']
 })
 export class PropertyTabComponent {
-  @ViewChild('svgContainer', {static: false}) private svgContainer: ElementRef;
-  @ViewChild('mainGroup', {static: false}) private g: ElementRef;
-
   @Output() viewSource = new EventEmitter<void>();
   @Output() inspect = new EventEmitter<{node: FlatNode; directivePosition: DirectivePosition}>();
   @Output() inspectInjector = new EventEmitter<any>();
@@ -39,9 +36,9 @@ export class PropertyTabComponent {
 
   private _currentSelectedElement: IndexedNode|null = null;
 
-
   constructor(
-      private _nestedProps: ElementPropertyResolver, private _messageBus: MessageBus<Events>) {}
+      private _elementPropertyResolver: ElementPropertyResolver,
+  ) {}
 
   propertyTabIndex = 0;
   tokenName = '';
@@ -53,77 +50,85 @@ export class PropertyTabComponent {
     optional: {link: 'https://angular.io/api/core/Optional'}
   };
 
-  get injectorParameters(): any[] {
-    return this._nestedProps.injectorMetadata;
+  get injectorParameters(): any {
+    return this._elementPropertyResolver.injectorMetadata;
   }
 
   get injectorDataLoaded(): boolean {
-    return !!this.injectorParameters.length;
+    return !!Object.keys(this.injectorParameters ?? {}).length;
   }
+}
 
-  specialToken = false;
-  currentInjectorTreeGraph: InjectorTreeGraph|null = null;
-  inspectInjectorParameterToken(injectorParameter: any): void {
-    this._messageBus.once('injectorParameterResolutionPath', (path) => {
-      this.specialToken = false;
+@Component({
+  selector: 'ng-resolution-path',
+  template: `
+    <section>
+      <svg #svgContainer class="svg-container">
+          <g #mainGroup></g>
+      </svg>
+    </section>
+  `,
+  styles: [`:host { display: block; }`]
+})
 
-      path.forEach((injector, index) => {
-        injector.position = [index];
+export class ResolutionPathComponent implements OnInit {
+  @ViewChild('svgContainer', {static: true}) private svgContainer: ElementRef;
+  @ViewChild('mainGroup', {static: true}) private g: ElementRef;
 
-        if (index !== path.length - 1) {
-          injector.children = [path[index + 1]];
-          return;
-        }
+  private currentInjectorTreeGraph: InjectorTreeGraph;
+  private pathNode;
 
-        injector.children = [];
+  @Input()
+  set path(path: any) {
+    path.forEach((injector, index) => {
+      injector.position = [index];
 
-        if (injector.type === 'NullInjector') {
-          this.specialToken = true;
-        }
-
-        if (!injector.importPath?.length) {
-          return;
-        }
-
-        injector.importPath[0].position = [index];
-        path[index - 1].children = [injector.importPath[0]];
-
-        injector.importPath.forEach((importedModule, importedModuleIndex) => {
-          if (importedModule.type === 'ImportedModule') {
-            importedModule.position = [index, importedModuleIndex - 1];
-          }
-
-          importedModule.children = [];
-
-          if (importedModuleIndex !== injector.importPath.length - 1) {
-            importedModule.children.push(injector.importPath[importedModuleIndex + 1])
-          }
-        });
-      });
-
-      this.tokenName = injectorParameter.token;
-      this.propertyTabIndex = 1;
-
-      if (this.specialToken) {
+      if (index !== path.length - 1) {
+        injector.children = [path[index + 1]];
         return;
       }
 
-      setTimeout(() => {
-        this.currentInjectorTreeGraph =
-            new InjectorTreeGraph(this.svgContainer.nativeElement, this.g.nativeElement);
-        this.currentInjectorTreeGraph.update([path[0]]);
-        this.currentInjectorTreeGraph.onNodeClick((pointerEvent, node) => {
-          this.inspectInjector.emit({
-            directivePosition: this.currentSelectedElement!.position,
-            injectorParameter,
-            injectorPosition: node.data.position
-          });
-        });
+      injector.children = [];
+
+      if (injector.type === 'NullInjector') {
+        // this.specialToken = true;
+      }
+
+      if (!injector.importPath?.length) {
+        return;
+      }
+
+      injector.importPath[0].position = [index];
+      path[index - 1].children = [injector.importPath[0]];
+
+      injector.importPath.forEach((importedModule, importedModuleIndex) => {
+        if (importedModule.type === 'ImportedModule') {
+          importedModule.position = [index, importedModuleIndex - 1];
+        }
+
+        importedModule.children = [];
+
+        if (importedModuleIndex !== injector.importPath.length - 1) {
+          importedModule.children.push(injector.importPath[importedModuleIndex + 1])
+        }
       });
     });
 
-    this._messageBus.emit(
-        'traceInjectorParameterResolutionPath',
-        [this.currentSelectedElement!.position, injectorParameter]);
+    this.pathNode = path[0];
+  }
+
+  @Output() inspectInjector = new EventEmitter<any>();
+
+  constructor() {}
+
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.currentInjectorTreeGraph =
+          new InjectorTreeGraph(this.svgContainer.nativeElement, this.g.nativeElement);
+      this.currentInjectorTreeGraph.update([this.pathNode]);
+      this.currentInjectorTreeGraph.onNodeClick((_, node) => {
+        this.inspectInjector.emit(node.data.position);
+      });
+    })
   }
 }

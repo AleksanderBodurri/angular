@@ -158,8 +158,6 @@ export class R3Injector extends EnvironmentInjector {
 
     this.injectorDefTypes =
         new Set(this.get(INJECTOR_DEF_TYPES.multi, EMPTY_ARRAY, InjectFlags.Self));
-
-    console.log(this);
   }
 
   /**
