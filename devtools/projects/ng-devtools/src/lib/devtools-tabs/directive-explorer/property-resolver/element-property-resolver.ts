@@ -44,7 +44,6 @@ export class ElementPropertyResolver {
     this._flushDeletedProperties(data);
 
     this._injectorMetadata = {};
-    debugger
     injector.forEach(injectorParameter => {
       const context = injectorParameter.context.split('_Factory')[0];
       if (!this._injectorMetadata[context]) {
