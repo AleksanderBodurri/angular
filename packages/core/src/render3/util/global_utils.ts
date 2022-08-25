@@ -9,10 +9,11 @@ import {getInjectorDef} from '../../di/interface/defs';
 import {walkProviderTree} from '../../di/provider_collection';
 import {assertDefined} from '../../util/assert';
 import {global} from '../../util/global';
+import {stringify} from '../../util/stringify';
 import {setProfiler} from '../profiler';
 
 import {applyChanges} from './change_detection_utils';
-import {getComponent, getContext, getDirectiveMetadata, getDirectives, getElementInjectorMetadata, getHostElement, getInjector, getInjectorResolutionPath, getListeners, getOwningComponent, getRootComponents, traceTokenInjectorPath} from './discovery_utils';
+import {getComponent, getContainerProviders, getContext, getDebugNode, getDirectiveMetadata, getDirectives, getElementInjectorMetadata, getHostElement, getInjector, getInjectorMetadata, getInjectorResolutionPath, getListeners, getOwningComponent, getRootComponents, traceTokenInjectorPath, traceTokenResolutionPath} from './discovery_utils';
 
 
 
@@ -62,7 +63,11 @@ export function publishDefaultGlobalUtils() {
     publishGlobalUtil('applyChanges', applyChanges);
     publishGlobalUtil('getInjectorResolutionPath', getInjectorResolutionPath);
     publishGlobalUtil('traceTokenInjectorPath', traceTokenInjectorPath);
+    publishGlobalUtil('traceTokenResolutionPath', traceTokenResolutionPath);
     publishGlobalUtil('getElementInjectorMetadata', getElementInjectorMetadata);
+    publishGlobalUtil('getInjectorMetadata', getInjectorMetadata);
+    publishGlobalUtil('getDebugNode', getDebugNode);
+    publishGlobalUtil('getContainerProviders', getContainerProviders);
   }
 }
 

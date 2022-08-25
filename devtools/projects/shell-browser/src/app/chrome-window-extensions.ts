@@ -80,9 +80,10 @@ const chromeWindowExtensions = {
 
     let injector;
     if (injectorPosition.length == 2) {
-      injector = resolutionPath[injectorPosition[0]].importPath[injectorPosition[1] + 1];
+      injector =
+          resolutionPath.slice().reverse()[injectorPosition[0]].importPath[injectorPosition[1] + 1]
     } else {
-      injector = resolutionPath[injectorPosition[0]];
+      injector = resolutionPath.slice().reverse()[injectorPosition[0]];
     }
 
     console.log(injector);

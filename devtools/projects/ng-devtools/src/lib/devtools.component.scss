@@ -89,3 +89,12 @@
     color: #bcc5ce;
   }
 }
+
+
+:host-context(.dark-theme) {
+  ::ng-deep {
+    .arrow {
+      fill: white;
+    }
+  }
+}

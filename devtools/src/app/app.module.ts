@@ -7,8 +7,9 @@
  */
 
 import {DOCUMENT} from '@angular/common';
-import {HttpClientModule} from '@angular/common/http';
+import {HttpClient, HttpClientModule} from '@angular/common/http';
 import {Component, Directive, inject, Injectable, InjectionToken, ModuleWithProviders, NgModule} from '@angular/core';
+import {ReactiveFormsModule} from '@angular/forms';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {Router, RouterModule} from '@angular/router';
 import {ApplicationEnvironment, ApplicationOperations} from 'ng-devtools';
@@ -73,7 +74,7 @@ export const foo = new InjectionToken('foo');
         loadChildren: () => import('./demo-app/demo-app.module').then((m) => m.DemoAppModule),
       },
     ]),
-    SomeFeatureModule, HttpClientModule
+    SomeFeatureModule, HttpClientModule, ReactiveFormsModule
   ],
   providers: [
     {
@@ -89,4 +90,5 @@ export const foo = new InjectionToken('foo');
   bootstrap: [AppComponent],
 })
 export class AppModule {
+  constructor(private httpClient: HttpClient) {}
 }

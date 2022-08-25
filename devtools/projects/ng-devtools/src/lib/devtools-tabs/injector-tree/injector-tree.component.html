@@ -1,25 +1,72 @@
-<section class="injector-tree">
-    <ul class="legend">
-        <li>
-            Null
-            <svg><g><circle class="node-null" r="6"></circle></g></svg>
-        </li>
-        <li>
-            Module
-            <svg><g><circle class="node-module" r="6"></circle></g></svg>
-        </li>
-        <li>
-            Element
-            <svg><g><circle class="node-element" r="6"></circle></g></svg>
-        </li>
-        <li>
-            Platform
-            <svg><g><circle class="node-platform" r="6"></circle></g></svg>
-        </li>
-    </ul>
-    <section #injectorTree class="graph">
-        <svg #svgContainer class="svg-container">
-            <g #mainGroup></g>
-          </svg>
-    </section>
-</section>
+<as-split unit="percent" direction="horizontal" [gutterSize]="9">
+    <as-split-area size="60">
+        <section class="injector-tree">
+            <ul class="legend">
+                <li>
+                    Null
+                    <svg><g><circle class="node-null" r="6"></circle></g></svg>
+                </li>
+                <li>
+                    Module
+                    <svg><g><circle class="node-module" r="6"></circle></g></svg>
+                </li>
+                <li>
+                    Imported Module
+                    <svg><g><circle class="node-imported-module" r="6"></circle></g></svg>
+                </li>
+                <li>
+                    Element
+                    <svg><g><circle class="node-element" r="6"></circle></g></svg>
+                </li>
+                <li>
+                    Platform
+                    <svg><g><circle class="node-platform" r="6"></circle></g></svg>
+                </li>
+            </ul>
+            <section #injectorTree class="graph">
+                <svg #svgContainer class="svg-container">
+                    <g #mainGroup></g>
+                  </svg>
+            </section>
+        </section>
+    </as-split-area>
+    <as-split-area *ngIf="selectedNode" size="40" minSize="25">
+        <ng-container *ngIf="providers.length === 0">
+            <div class="no-deps">
+                {{ selectedNode.injector.owner }} has no providers.
+            </div>
+        </ng-container>
+        <ng-container *ngIf="providers.length > 0">
+            <div class="providers-title">
+                Providers for {{ selectedNode.injector.owner }}
+            </div>
+
+            <mat-accordion>
+                <mat-expansion-panel [expanded]="false" *ngFor="let provider of providers">
+                    <mat-expansion-panel-header collapsedHeight="25px" expandedHeight="25px">
+                    <mat-panel-title>
+                        <span>{{ provider.provider }}</span>
+                    </mat-panel-title>
+                    </mat-expansion-panel-header>
+        
+                    <div class="deps">
+                        <div class="dep" *ngFor="let dep of (provider?.dependencies ?? [])">
+                            <div class="dep-header">{{ dep.token }}</div>
+                            <div>
+                                <ng-resolution-path [nodeSeperation]="0.1" orientation="vertical" [path]="dep.resolutionPath"></ng-resolution-path>
+                            </div>
+                        </div>
+        
+                        <div class="no-deps" *ngIf="(provider?.dependencies ?? []).length === 0">
+                            {{ provider.provider }} does not have any dependencies.
+                        </div>
+                    </div>
+                </mat-expansion-panel>
+            </mat-accordion>
+            
+        </ng-container>
+
+
+    </as-split-area>
+</as-split>
+  

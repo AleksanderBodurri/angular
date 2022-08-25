@@ -12,23 +12,25 @@
         <mat-tab-group [animationDuration]="0" [(selectedIndex)]="propertyTabIndex">
           <mat-tab #tab label="{{ item.key }}" *ngFor="let item of injectorParameters | keyvalue">
             <ng-container *ngIf="tab.isActive">
-              <div class="injector-param" *ngFor="let parameter of item.value">
-                <div class="details">
-                  <section class="parameters">
-                    <span class="parameter-name">{{ parameter.token }}<span *ngIf="parameter.value">:</span></span>
-                    <span class="parameter-value"> {{ parameter.value }}</span>
-                  </section>
-                  <ol *ngIf="parameter.flags.length > 0">
-                    <ng-container *ngFor="let flag of parameter.flags | keyvalue">
-                      <li *ngIf="flag.value" class="parameter-flag" matTooltip="See docs reference.">
-                        <a target="_blank" [href]="injectorFlagContent[flag.key]?.link">
-                          {{ flag.key | uppercase }}
-                        </a>
-                      </li>
-                    </ng-container>
-                  </ol>
+              <div class="flex">
+                <div class="injector-param" *ngFor="let parameter of item.value">
+                  <div class="details">
+                    <section class="parameters">
+                      <span class="parameter-name">{{ parameter.token }}<span *ngIf="parameter.value">:</span></span>
+                      <span class="parameter-value"> {{ parameter.value }}</span>
+                    </section>
+                    <ol *ngIf="parameter.flags.length > 0">
+                      <ng-container *ngFor="let flag of parameter.flags | keyvalue">
+                        <li *ngIf="flag.value" class="parameter-flag" matTooltip="See docs reference.">
+                          <a target="_blank" [href]="injectorFlagContent[flag.key]?.link">
+                            {{ flag.key | uppercase }}
+                          </a>
+                        </li>
+                      </ng-container>
+                    </ol>
+                  </div>
+                  <ng-resolution-path [nodeSeperation]="0.1" orientation="vertical" [nodeSeperation]="2" (inspectInjector)="inspectInjector.emit({ directivePosition: currentSelectedElement?.position, injectorParameter: parameter, injectorPosition: $event })" [path]="parameter.resolutionPath"></ng-resolution-path>
                 </div>
-                <ng-resolution-path (inspectInjector)="inspectInjector.emit({ directivePosition: currentSelectedElement?.position, injectorParameter: parameter, injectorPosition: $event })" [path]="parameter.resolutionPath"></ng-resolution-path>
               </div>
             </ng-container>
           </mat-tab>

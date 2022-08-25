@@ -216,4 +216,7 @@ export interface Events {
 
   traceInjectorParameterResolutionPath: (directivePosition: any, injectorParameter: any) => void;
   injectorParameterResolutionPath: (path: any) => void;
+
+  getProviders: (node: any) => void;
+  receiveProviders: (providers: any) => void;
 }

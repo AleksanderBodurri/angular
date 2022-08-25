@@ -24,26 +24,30 @@ import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from '.
 
 const ngDebug = () => (window as any).ng;
 
+export const serializeInjectorParameter =
+    (injectorParameter: any, index: number) => {
+      if (injectorParameter.token.ngMetadataName === 'InjectionToken') {
+        return {
+          token: `${injectorParameter.token.constructor.name}(${injectorParameter.token._desc})`,
+              context: injectorParameter.context.factory.name,
+              value: injectorParameter?.value?.constructor?.name, flags: injectorParameter.flags,
+              paramIndex: index
+        }
+      }
+
+      return {
+        token: injectorParameter.token.name, context: injectorParameter.context.factory.name,
+            value: injectorParameter.value.constructor.name, flags: injectorParameter.flags,
+            paramIndex: index
+      }
+    }
+
 export const getInjectorMetadataFromElement =
     (element: Node|undefined) => {
       let injectorMetadata = (window as any).ng?.getElementInjectorMetadata?.(element);
       if (injectorMetadata) {
         return injectorMetadata.map((injectorParameter: any, index: number) => {
-          if (injectorParameter.token.ngMetadataName === 'InjectionToken') {
-            return {
-              token:
-                  `${injectorParameter.token.constructor.name}(${injectorParameter.token._desc})`,
-                  context: injectorParameter.context.factory.name,
-                  value: injectorParameter?.value?.constructor?.name,
-                  flags: injectorParameter.flags, paramIndex: index
-            }
-          }
-
-          return {
-            token: injectorParameter.token.name, context: injectorParameter.context.factory.name,
-                value: injectorParameter.value.constructor.name, flags: injectorParameter.flags,
-                paramIndex: index
-          }
+          return serializeInjectorParameter(injectorParameter, index);
         });
       }
       return [];

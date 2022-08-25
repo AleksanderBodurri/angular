@@ -10,6 +10,7 @@ import '../util/ng_dev_mode';
 
 import {RuntimeError, RuntimeErrorCode} from '../errors';
 import {Type} from '../interface/type';
+import {NgModuleRef as viewEngine_NgModuleRef} from '../linker/ng_module_factory';
 import {stringify} from '../util/stringify';
 
 import {resolveForwardRef} from './forward_ref';
@@ -61,6 +62,21 @@ export function injectInjectorOnly<T>(token: ProviderToken<T>, flags = InjectFla
   } else if (_currentInjector === null) {
     return injectRootLimpMode(token, undefined, flags);
   } else {
+    const value =
+        _currentInjector.get(token, flags & InjectFlags.Optional ? null : undefined, flags);
+
+    const injectionFlags = {
+      optional: !!(flags & InjectFlags.Optional),
+      self: !!(flags & InjectFlags.Self),
+      skipSelf: !!(flags & InjectFlags.SkipSelf),
+      host: !!(flags & InjectFlags.Host)
+    };
+
+    const container = _currentInjector.get(viewEngine_NgModuleRef, null, InjectFlags.Default);
+    (_currentInjector as any)
+        .__ngInjectorMetadata__.set(
+            token, {token, value, flags: injectionFlags, context: container})
+
     return _currentInjector.get(token, flags & InjectFlags.Optional ? null : undefined, flags);
   }
 }
@@ -250,6 +266,7 @@ export function inject<T>(
              ((flags.self && InternalInjectFlags.Self) as number) |
              ((flags.skipSelf && InternalInjectFlags.SkipSelf) as number)) as InjectFlags;
   }
+
   return ɵɵinject(token, flags);
 }
 

@@ -1,0 +1,20 @@
+load("//devtools/tools:ng_module.bzl", "ng_module")
+
+package(default_visibility = ["//visibility:public"])
+
+ng_module(
+    name = "resolution-path",
+    srcs = [
+        "resolution-path.component.ts",
+    ],
+    deps = [
+        "//devtools/projects/ng-devtools/src/lib/devtools-tabs/injector-tree:injector-tree-graph",
+        "//devtools/projects/protocol",
+        "//packages/common",
+        "//packages/core",
+        "@npm//@angular/cdk",
+        "@npm//@angular/material",
+        "@npm//@types",
+        "@npm//rxjs",
+    ],
+)

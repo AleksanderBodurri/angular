@@ -7,7 +7,7 @@
  */
 
 import {ChangeDetectionStrategy} from '../../change_detection/constants';
-import {InjectFlags, NgModuleRef as viewEngine_NgModuleRef, Provider, Type} from '../../core';
+import {EnvironmentInjector, InjectFlags, NgModuleRef as viewEngine_NgModuleRef, Provider, Type} from '../../core';
 import {Injector} from '../../di/injector';
 import {getInjectorDef} from '../../di/interface/defs';
 import {NullInjector} from '../../di/null_injector';
@@ -404,6 +404,20 @@ export function getElementInjectorMetadata(element: Element) {
   return [...injectorMetadata.values()];
 }
 
+export function getInjectorMetadata(injector: EnvironmentInjector) {
+  const injectorMetadata = injector.__ngInjectorMetadata__;
+  return [...injectorMetadata.values()];
+}
+
+export function getContainerProviders(container: any) {
+  const providers: any[] = [];
+  walkProviderTree(container, (provider, providerContainer) => {
+    providers.push(provider);
+  }, [], new Set());
+
+  return providers;
+}
+
 /**
  * Retrieve map of local references.
  *
@@ -641,27 +655,18 @@ export function getInjectorResolutionPath(element: Element): any[]|null {
 
   while (injector !== undefined) {
     if (injector instanceof NullInjector) {
-      injectorPath.push({
-        type: 'NullInjector',
-        owner: injector.constructor,
-      });
+      injectorPath.push({type: 'NullInjector', owner: injector.constructor, instance: injector});
       break;
     } else if (injector.scopes?.has?.('platform')) {
-      injectorPath.push({
-        type: 'Platform',
-        owner: injector.constructor,
-      });
+      injectorPath.push({type: 'Platform', owner: injector.constructor, instance: injector});
     } else if (injector.scopes?.has?.('environment') && injector.scopes?.has?.('root')) {
       if (ngModuleType) {
-        injectorPath.push({type: 'Module', owner: ngModuleType});
+        injectorPath.push({type: 'Module', owner: ngModuleType, instance: injector});
       } else {
-        injectorPath.push({type: 'Injector', owner: injector.constructor});
+        injectorPath.push({type: 'Injector', owner: injector.constructor, instance: injector});
       }
     } else if (ngModuleType !== undefined && ngModuleType.ɵmod) {
-      injectorPath.push({
-        type: 'Module',
-        owner: ngModuleType,
-      });
+      injectorPath.push({type: 'Module', owner: ngModuleType, instance: injector});
     }
 
     injector = injector.parent;
@@ -726,6 +731,107 @@ export function traceTokenInjectorPath(element: Element, tokenToTrace: any): any
   }
 
   let injector = (context.lView![INJECTOR] as any).parentInjector;
+  ;
+  let ngModuleType =
+      injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self)?.instance?.constructor;
+
+
+  const findImportPathForTokenInModule = (moduleConstructor: any, tokenToTrace: any) => {
+    let foundModule = false;
+    let pathCursor: any = undefined;
+    let path: any[] = [];
+
+    const traceTokenInjectorPathVisitor = (provider: any, ngModule: any) => {
+      if (foundModule) {
+        const imports = getInjectorDef(ngModule)?.imports ?? [];
+
+        if (imports.find(
+                moduleImport =>
+                    (moduleImport as any).ngModule === pathCursor || moduleImport === pathCursor)) {
+          pathCursor = ngModule;
+          path.unshift(pathCursor);
+        }
+
+        return;
+      }
+
+      const foundToken = provider === tokenToTrace || provider.provide === tokenToTrace;
+      if (foundToken) {
+        foundModule = true;
+        pathCursor = ngModule;
+        path.unshift(pathCursor);
+      }
+    };
+
+    walkProviderTree(moduleConstructor, traceTokenInjectorPathVisitor, [], new Set());
+    return path.map((owner: any, index: number) => {
+      let type = index === 0 ? 'Module' : 'ImportedModule';
+      return {type, owner};
+    });
+  };
+
+  while (injector !== undefined) {
+    if (injector instanceof NullInjector) {
+      injectorPath.push({type: 'NullInjector', owner: injector.constructor});
+      break;
+    } else if (injector.scopes?.has?.('platform')) {
+      injectorPath.push({type: 'Platform', owner: injector.constructor});
+
+      if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
+        return injectorPath;
+      }
+    } else if (injector.scopes?.has?.('environment') && injector.scopes?.has?.('root')) {
+      if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self)) {
+        const importPath = findImportPathForTokenInModule(ngModuleType, tokenToTrace);
+
+        injectorPath.push({
+          type: 'Module',
+          owner: ngModuleType,
+          importedFrom: importPath[importPath.length - 1],
+          importPath
+        });
+
+        return injectorPath;
+      }
+
+      injectorPath.push({type: 'Module', owner: ngModuleType});
+    } else if (ngModuleType !== undefined && ngModuleType.ɵmod) {
+      if (injector.get(tokenToTrace, DEVTOOLS_NOT_FOUND, InjectFlags.Self) !== DEVTOOLS_NOT_FOUND) {
+        const importPath = findImportPathForTokenInModule(ngModuleType, tokenToTrace);
+
+        injectorPath.push({
+          type: 'Module',
+          owner: ngModuleType,
+          importedFrom: importPath[importPath.length - 1],
+          importPath
+        });
+
+        return injectorPath;
+      }
+
+      injectorPath.push({type: 'Module', owner: ngModuleType});
+    }
+
+    injector = injector.parent;
+    const moduleRef = injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self);
+
+    // skip hidden AppModule
+    if (injector?.source === 'AppModule' && moduleRef === null) {
+      injector = injector.parent;
+    }
+
+    ngModuleType = moduleRef.instance.constructor;
+  }
+
+  return injectorPath;
+}
+
+
+export function traceTokenResolutionPath(tokenToTrace: any, startingInjector: any) {
+  const injectorPath: any[] = [];
+  const DEVTOOLS_NOT_FOUND = {};
+
+  let injector = startingInjector;
   let ngModuleType =
       injector?.get?.(viewEngine_NgModuleRef, null, InjectFlags.Self)?.instance?.constructor;
 

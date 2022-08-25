@@ -207,7 +207,8 @@ export class DirectiveExplorerComponent implements OnInit, OnDestroy {
   }
 
   inspectInjector({injectorParameter, directivePosition, injectorPosition}): void {
-    this._appOperations.inspectInjector(directivePosition, injectorParameter, injectorPosition);
+    this._appOperations.inspectInjector(
+        directivePosition, {paramIndex: injectorParameter.paramIndex}, injectorPosition);
   }
 
   inspect({node, directivePosition}:

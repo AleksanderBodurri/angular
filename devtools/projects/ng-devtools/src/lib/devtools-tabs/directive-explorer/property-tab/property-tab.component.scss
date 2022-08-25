@@ -76,16 +76,23 @@ ng-property-view-body {
     .injector-param {
       display: flex;
       align-items: center;
+      flex-direction: column;
+
+      border-right: 1px solid #e8e8e8;
 
       .details {
         display: flex;
-        text-align: center;
-        justify-content: center;
-        width: 200px;
-        height: 90px;
-        flex-shrink: 0;
+        text-overflow: ellipsis;
+        padding-top: 8px;
+        overflow: hidden;
+        line-height: 25px;
+        font-size: 12px;
+        font-weight: 500;
+        height: auto;
+        width: 100%;
+        min-width: 200px;
         align-items: center;
-        border-right: 1px solid #e8e8e8;
+        justify-content: center;
       }
 
       ng-resolution-path {
@@ -260,4 +267,12 @@ mat-toolbar {
   .mat-toolbar {
     background: #161515;
   }
+}
+
+.flex {
+  display: flex;
+}
+
+.parameters {
+  text-align: center;
 }
