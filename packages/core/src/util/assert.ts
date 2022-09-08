@@ -107,10 +107,28 @@ export function throwError(msg: string, actual?: any, expected?: any, comparison
 }
 
 export function assertDomNode(node: any): asserts node is Node {
+  const isNodeFromAnotherFrame = (node: any) => {
+    if (node instanceof Node) {
+      return false;
+    }
+
+    let protoCursor = node.__proto__;
+
+    while (protoCursor !== null) {
+      if (protoCursor.constructor.name === 'Node') {
+        return true;
+      }
+
+      protoCursor = protoCursor.__proto__;
+    }
+
+    return false;
+  }
+
   // If we're in a worker, `Node` will not be defined.
   if (!(typeof Node !== 'undefined' && node instanceof Node) &&
       !(typeof node === 'object' && node != null &&
-        node.constructor.name === 'WebWorkerRenderNode')) {
+        node.constructor.name === 'WebWorkerRenderNode') && !isNodeFromAnotherFrame(node)) {
     throwError(`The provided value must be an instance of a DOM Node but got ${stringify(node)}`);
   }
 }
