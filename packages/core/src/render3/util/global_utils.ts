@@ -7,6 +7,8 @@
  */
 import {assertDefined} from '../../util/assert';
 import {global} from '../../util/global';
+import { getInjectorParent } from '../di';
+import { getDependenciesFromInstantiation, getInjectorProviders, setupFrameworkInjectorProfiler } from '../injector-profiler';
 import {setProfiler} from '../profiler';
 import {applyChanges} from './change_detection_utils';
 import {getComponent, getContext, getDirectiveMetadata, getDirectives, getHostElement, getInjector, getListeners, getOwningComponent, getRootComponents} from './discovery_utils';
@@ -40,6 +42,19 @@ let _published = false;
 export function publishDefaultGlobalUtils() {
   if (!_published) {
     _published = true;
+
+    /**
+    * Initalize default handling of injector events. This handling parses events
+    * as they are emitted and constructs the data structures necessary to support
+    * some of the debug APIs that are published below.
+    * 
+    * Supported APIs:
+    *               - getDependenciesFromInstantiation
+    */
+    setupFrameworkInjectorProfiler();
+    publishGlobalUtil('ɵgetDependenciesFromInstantiation', getDependenciesFromInstantiation);
+    publishGlobalUtil('ɵgetInjectorParent', getInjectorParent);
+    publishGlobalUtil('ɵgetInjectorProviders', getInjectorProviders);
 
     /**
      * Warning: this function is *INTERNAL* and should not be relied upon in application's code.

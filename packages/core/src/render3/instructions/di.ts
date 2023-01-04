@@ -10,8 +10,10 @@ import {assertInjectImplementationNotEqual} from '../../di/inject_switch';
 import {ɵɵinject} from '../../di/injector_compatibility';
 import {ProviderToken} from '../../di/provider_token';
 import {getOrCreateInjectable} from '../di';
+import {injectorProfiler, InjectorProfilerEventType} from '../injector-profiler';
 import {TDirectiveHostNode} from '../interfaces/node';
 import {getCurrentTNode, getLView} from '../state';
+import { Type } from '../../interface/type';
 
 /**
  * Returns the value associated to the given token from the injectors.
@@ -49,6 +51,20 @@ export function ɵɵdirectiveInject<T>(token: ProviderToken<T>, flags = InjectFl
     return ɵɵinject(token, flags);
   }
   const tNode = getCurrentTNode();
+
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    const value = getOrCreateInjectable<T>(tNode as any, lView, resolveForwardRef(token), flags);
+    injectorProfiler({
+      type: InjectorProfilerEventType.Inject,
+      data: {
+        token: token as Type<unknown>,
+        value: value as Type<unknown>,
+        flags
+      }
+    });
+    return value;
+  }
+
   return getOrCreateInjectable<T>(
       tNode as TDirectiveHostNode, lView, resolveForwardRef(token), flags);
 }

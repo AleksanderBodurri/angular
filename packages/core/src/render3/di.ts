@@ -7,7 +7,7 @@
  */
 
 import {isForwardRef, resolveForwardRef} from '../di/forward_ref';
-import {injectRootLimpMode, setInjectImplementation} from '../di/inject_switch';
+import {injectRootLimpMode, setDebugInjectContext, setInjectImplementation} from '../di/inject_switch';
 import {Injector} from '../di/injector';
 import {convertToBitFlags} from '../di/injector_compatibility';
 import {InjectorMarkers} from '../di/injector_marker';
@@ -22,16 +22,20 @@ import {getFactoryDef} from './definition_factory';
 import {throwCyclicDependencyError, throwProviderNotFoundError} from './errors_di';
 import {NG_ELEMENT_ID, NG_FACTORY_DEF} from './fields';
 import {registerPreOrderHooks} from './hooks';
+import {injectorProfiler, InjectorProfilerContext, InjectorProfilerEventType} from './injector-profiler';
 import {DirectiveDef} from './interfaces/definition';
 import {isFactory, NO_PARENT_INJECTOR, NodeInjectorFactory, NodeInjectorOffset, RelativeInjectorLocation, RelativeInjectorLocationFlags} from './interfaces/injector';
 import {AttributeMarker, TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TNode, TNodeProviderIndexes, TNodeType} from './interfaces/node';
 import {isComponentDef, isComponentHost} from './interfaces/type_checks';
-import {DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, INJECTOR, LView, LViewFlags, T_HOST, TData, TVIEW, TView, TViewType} from './interfaces/view';
+import {DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, INJECTOR, LView, LViewFlags, T_HOST, TData, TVIEW, TView, TViewType, HOST} from './interfaces/view';
 import {assertTNodeType} from './node_assert';
 import {enterDI, getCurrentTNode, getLView, leaveDI} from './state';
 import {isNameOnlyAttributeMarker} from './util/attrs_utils';
 import {getParentInjectorIndex, getParentInjectorView, hasParentInjector} from './util/injector_utils';
 import {stringifyForError} from './util/stringify_utils';
+import { EnvironmentInjector } from '../di';
+import { R3Injector } from '../di/r3_injector';
+import { RElement } from './interfaces/renderer_dom';
 
 
 
@@ -418,6 +422,30 @@ export function getOrCreateInjectable<T>(
   return lookupTokenUsingModuleInjector<T>(lView, token, flags, notFoundValue);
 }
 
+export function getInjectorParent(injector: Injector): Injector|null {
+  if (injector instanceof NodeInjector) {
+    const { tNode, lView } = new DebugNodeInjector(injector);
+    const parentLocation = getParentInjectorLocation(tNode as TElementNode|TContainerNode|TElementContainerNode, lView);
+
+    if (hasParentInjector(parentLocation)) {
+      const parentInjectorIndex = getParentInjectorIndex(parentLocation);
+      const parentLView = getParentInjectorView(parentLocation, lView);
+      const parentTView = parentLView[TVIEW];
+      const parentTNode = parentTView.data[parentInjectorIndex + NodeInjectorOffset.TNODE] as TNode;
+      return new DebugNodeInjector(new NodeInjector(parentTNode as TElementNode|TContainerNode|TElementContainerNode, parentLView));
+    } else {
+      // Get closest module injector
+      return (lView[INJECTOR] as any).parentInjector;
+    }
+  }
+
+  if (injector instanceof R3Injector) {
+    return injector.parent;
+  }
+
+  return null;
+}
+
 /**
  * Returns the value associated to the given token from the node injector.
  *
@@ -443,10 +471,30 @@ function lookupTokenUsingNodeInjector<T>(
           lookupTokenUsingModuleInjector<T>(lView, token, flags, notFoundValue);
     }
     try {
+      let prevInjectContext: InjectorProfilerContext|undefined;
+      if (typeof ngDevMode === 'undefined' || ngDevMode) {
+        const nodeInjector = new NodeInjector(getCurrentTNode() as TElementNode, getLView());
+        prevInjectContext = setDebugInjectContext({
+          injector: new DebugNodeInjector(nodeInjector),
+          token: token as Type<T>
+        });
+      }
+
       const value = bloomHash(flags);
       if (value == null && !(flags & InjectFlags.Optional)) {
         throwProviderNotFoundError(token);
       } else {
+        if ((typeof ngDevMode === 'undefined' || ngDevMode) && prevInjectContext !== undefined) {
+          injectorProfiler({
+            type: InjectorProfilerEventType.Create,
+            data: {
+              value
+            }
+          });
+
+          setDebugInjectContext(prevInjectContext);
+        }
+
         return value;
       }
     } finally {
@@ -615,6 +663,15 @@ export function getNodeInjectable(
     }
     const previousIncludeViewProviders = setIncludeViewProviders(factory.canSeeViewProviders);
     factory.resolving = true;
+
+    let prevInjectContext: InjectorProfilerContext|undefined;
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      let tokenType = (tData[index] as DirectiveDef<unknown>).type || tData[index];
+      const nodeInjector = new NodeInjector(tNode, lView);
+      
+      prevInjectContext = setDebugInjectContext({injector: new DebugNodeInjector(nodeInjector), token: tokenType});
+    }
+
     const previousInjectImplementation =
         factory.injectImpl ? setInjectImplementation(factory.injectImpl) : null;
     const success = enterDI(lView, tNode, InjectFlags.Default);
@@ -624,6 +681,16 @@ export function getNodeInjectable(
             'Because flags do not contain \`SkipSelf\' we expect this to always succeed.');
     try {
       value = lView[index] = factory.factory(undefined, tData, lView, tNode);
+
+      if (typeof ngDevMode === 'undefined' || ngDevMode) {
+        injectorProfiler({
+          type: InjectorProfilerEventType.Create,
+          data: {
+            value
+          }
+        });
+      }
+
       // This code path is hit for both directives and providers.
       // For perf reasons, we want to avoid searching for hooks on providers.
       // It does no harm to try (the hooks just won't exist), but the extra
@@ -635,6 +702,10 @@ export function getNodeInjectable(
         registerPreOrderHooks(index, tData[index] as DirectiveDef<any>, tView);
       }
     } finally {
+      if ((typeof ngDevMode === 'undefined' || ngDevMode) && prevInjectContext) {
+        setDebugInjectContext(prevInjectContext);
+      }
+
       previousInjectImplementation !== null &&
           setInjectImplementation(previousInjectImplementation);
       setIncludeViewProviders(previousIncludeViewProviders);
@@ -698,6 +769,21 @@ export function bloomHasToken(bloomHash: number, injectorIndex: number, injector
 /** Returns true if flags prevent parent injector from being searched for tokens */
 function shouldSearchParent(flags: InjectFlags, isFirstHostTNode: boolean): boolean|number {
   return !(flags & InjectFlags.Self) && !(flags & InjectFlags.Host && isFirstHostTNode);
+}
+
+/**
+ * Debug wrapper around a NodeInjector.
+ */
+export class DebugNodeInjector implements Injector {
+  constructor(public delegate: NodeInjector) {}
+
+  get hostElement(): RElement | null {
+    return ((this.delegate as any)._lView as LView)[HOST];
+  }
+
+  get(token: any, notFoundValue?: any, flags?: InjectFlags|InjectOptions): any {
+    return this.delegate.get(token, notFoundValue, flags);
+  }
 }
 
 export class NodeInjector implements Injector {

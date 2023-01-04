@@ -8,18 +8,20 @@
 
 
 import {resolveForwardRef} from '../di/forward_ref';
+import { setDebugInjectContext } from '../di/inject_switch';
 import {ClassProvider, Provider} from '../di/interface/provider';
 import {isClassProvider, isTypeProvider} from '../di/provider_collection';
 import {providerToFactory} from '../di/r3_injector';
+import { Type } from '../interface/type';
 import {assertDefined} from '../util/assert';
 
-import {diPublicInInjector, getNodeInjectable, getOrCreateNodeInjectorForNode} from './di';
+import {diPublicInInjector, getNodeInjectable, getOrCreateNodeInjectorForNode, NodeInjector} from './di';
 import {ɵɵdirectiveInject} from './instructions/all';
 import {DirectiveDef} from './interfaces/definition';
 import {NodeInjectorFactory} from './interfaces/injector';
 import {TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TNodeProviderIndexes} from './interfaces/node';
 import {isComponentDef} from './interfaces/type_checks';
-import {DestroyHookData, LView, TData, TVIEW, TView} from './interfaces/view';
+import {DestroyHookData, HOST, LView, TData, TVIEW, TView} from './interfaces/view';
 import {getCurrentTNode, getLView, getTView} from './state';
 
 
@@ -74,10 +76,22 @@ function resolveProvider(
   } else {
     const tView = getTView();
     const lView = getLView();
-    let token: any = isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide);
-    let providerFactory: () => any = providerToFactory(provider);
-
     const tNode = getCurrentTNode()!;
+    let token: any = isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide);
+
+    let providerFactory: () => any
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      const nodeInjector = new NodeInjector(tNode as TElementNode|TContainerNode|TElementContainerNode, lView);
+      const prevInjectContext = setDebugInjectContext({
+        injector: new DebugNodeInjector(nodeInjector),
+        token: token as Type<unknown>
+      });
+      providerFactory = providerToFactory(provider);
+      setDebugInjectContext(prevInjectContext);
+    } else {
+      providerFactory = providerToFactory(provider);
+    }
+
     const beginIndex = tNode.providerIndexes & TNodeProviderIndexes.ProvidersStartIndexMask;
     const endIndex = tNode.directiveStart;
     const cptViewProvidersCount =

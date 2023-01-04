@@ -14,13 +14,14 @@ import {Type} from '../interface/type';
 import {FactoryFn, getFactoryDef} from '../render3/definition_factory';
 import {throwCyclicDependencyError, throwInvalidProviderError, throwMixedMultiProviderError} from '../render3/errors_di';
 import {NG_ENV_ID} from '../render3/fields';
+import {injectorProfiler, InjectorProfilerContext, InjectorProfilerEventType} from '../render3/injector-profiler';
 import {newArray} from '../util/array_utils';
 import {EMPTY_ARRAY} from '../util/empty';
 import {stringify} from '../util/stringify';
 
 import {resolveForwardRef} from './forward_ref';
 import {ENVIRONMENT_INITIALIZER} from './initializer_token';
-import {setInjectImplementation} from './inject_switch';
+import {getDebugInjectContext, setDebugInjectContext, setInjectImplementation} from './inject_switch';
 import {InjectionToken} from './injection_token';
 import {Injector} from './injector';
 import {catchInjectorError, convertToBitFlags, injectArgs, NG_TEMP_TOKEN_PATH, setCurrentInjector, THROW_IF_NOT_FOUND, ɵɵinject} from './injector_compatibility';
@@ -30,7 +31,7 @@ import {InjectFlags, InjectOptions} from './interface/injector';
 import {ClassProvider, ConstructorProvider, EnvironmentProviders, InternalEnvironmentProviders, isEnvironmentProviders, Provider, StaticClassProvider} from './interface/provider';
 import {INJECTOR_DEF_TYPES} from './internal_tokens';
 import {NullInjector} from './null_injector';
-import {isExistingProvider, isFactoryProvider, isTypeProvider, isValueProvider, SingleProvider} from './provider_collection';
+import {isClassProvider, isExistingProvider, isFactoryProvider, isTypeProvider, isValueProvider, SingleProvider} from './provider_collection';
 import {ProviderToken} from './provider_token';
 import {INJECTOR_SCOPE, InjectorScope} from './scope';
 
@@ -68,6 +69,30 @@ interface Record<T> {
   factory: (() => T)|undefined;
   value: T|{};
   multi: any[]|undefined;
+}
+
+function emitProviderConfiguredEvent(provider: SingleProvider): void {
+  let providerType: 'value'|'factory'|'existing'|'type'|'class'|null = null;
+  if (isValueProvider(provider)) {
+    providerType = 'value';
+  } else if (isFactoryProvider(provider)) {
+    providerType = 'factory';
+  } else if (isExistingProvider(provider)) {
+    providerType = 'existing';
+  } else if (isTypeProvider(provider)) {
+    providerType = 'type';
+  } else if (isClassProvider(provider)) {
+    providerType = 'class';
+  }
+
+  injectorProfiler({
+    type: InjectorProfilerEventType.ProviderConfigured,
+    data: {
+      type: providerType,
+      multi: !isTypeProvider(provider) && provider.multi === true,
+      token: isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide)
+    }
+  });
 }
 
 /**
@@ -225,11 +250,21 @@ export class R3Injector extends EnvironmentInjector {
 
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
+
+    let prevInjectContext: InjectorProfilerContext|undefined;
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      prevInjectContext = setDebugInjectContext({injector: this, token: null as any});
+    }
+
     try {
       return fn();
     } finally {
       setCurrentInjector(previousInjector);
       setInjectImplementation(previousInjectImplementation);
+
+      if ((typeof ngDevMode === 'undefined' || ngDevMode) && prevInjectContext) {
+        setDebugInjectContext(prevInjectContext);
+      }
     }
   }
 
@@ -305,6 +340,11 @@ export class R3Injector extends EnvironmentInjector {
   resolveInjectorInitializers() {
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
+    let prevInjectContext: InjectorProfilerContext|undefined;
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      prevInjectContext = setDebugInjectContext({injector: this, token: null as any});
+    }
+
     try {
       const initializers = this.get(ENVIRONMENT_INITIALIZER.multi, EMPTY_ARRAY, InjectFlags.Self);
       if (ngDevMode && !Array.isArray(initializers)) {
@@ -321,6 +361,10 @@ export class R3Injector extends EnvironmentInjector {
     } finally {
       setCurrentInjector(previousInjector);
       setInjectImplementation(previousInjectImplementation);
+
+      if ((typeof ngDevMode === 'undefined' || ngDevMode) && prevInjectContext) {
+        setDebugInjectContext(prevInjectContext);
+      }
     }
   }
 
@@ -352,7 +396,14 @@ export class R3Injector extends EnvironmentInjector {
         isTypeProvider(provider) ? provider : resolveForwardRef(provider && provider.provide);
 
     // Construct a `Record` for the provider.
-    const record = providerToRecord(provider);
+    let record: Record<any>;
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      const prevInjectContext = setDebugInjectContext({injector: this, token: token as Type<unknown>});
+      record = providerToRecord(provider);
+      setDebugInjectContext(prevInjectContext);
+    } else {
+      record = providerToRecord(provider);
+    }
 
     if (!isTypeProvider(provider) && provider.multi === true) {
       // If the provider indicates that it's a multi-provider, process it specially.
@@ -384,7 +435,24 @@ export class R3Injector extends EnvironmentInjector {
       throwCyclicDependencyError(stringify(token));
     } else if (record.value === NOT_YET) {
       record.value = CIRCULAR;
-      record.value = record.factory!();
+
+      if (typeof ngDevMode === 'undefined' || ngDevMode) {
+        const prevInjectContext = setDebugInjectContext({injector: this, token: token as Type<T>});
+        try {
+          record.value = record.factory!();
+
+          injectorProfiler({
+            type: InjectorProfilerEventType.Create,
+            data: {
+              value: record.value as Type<unknown>
+            }
+          });
+        } finally {
+          setDebugInjectContext(prevInjectContext);
+        }
+      } else {
+        record.value = record.factory!();
+      }
     }
     if (typeof record.value === 'object' && record.value && hasOnDestroy(record.value)) {
       this._ngOnDestroyHooks.add(record.value);
@@ -463,6 +531,15 @@ function getUndecoratedInjectableFactory(token: Function) {
 
 function providerToRecord(provider: SingleProvider): Record<any> {
   if (isValueProvider(provider)) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
+      injectorProfiler({
+        type: InjectorProfilerEventType.Create,
+        data: {
+          value: provider.useValue as Type<unknown>
+        }
+      });
+    }
+
     return makeRecord(undefined, provider.useValue);
   } else {
     const factory: (() => any)|undefined = providerToFactory(provider);
@@ -480,6 +557,10 @@ export function providerToFactory(
   let factory: (() => any)|undefined = undefined;
   if (ngDevMode && isEnvironmentProviders(provider)) {
     throwInvalidProviderError(undefined, providers, provider);
+  }
+
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    emitProviderConfiguredEvent(provider);
   }
 
   if (isTypeProvider(provider)) {

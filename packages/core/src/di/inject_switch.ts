@@ -7,6 +7,7 @@
  */
 
 import {throwProviderNotFoundError} from '../render3/errors_di';
+import { InjectorProfilerContext } from '../render3/injector-profiler';
 import {assertNotEqual} from '../util/assert';
 import {stringify} from '../util/stringify';
 
@@ -39,6 +40,17 @@ export function setInjectImplementation(
     undefined): (<T>(token: ProviderToken<T>, flags?: InjectFlags) => T | null)|undefined {
   const previous = _injectImplementation;
   _injectImplementation = impl;
+  return previous;
+}
+
+let _injectContext: InjectorProfilerContext;
+export function getDebugInjectContext() {
+  return _injectContext;
+}
+
+export function setDebugInjectContext(context: InjectorProfilerContext) {
+  const previous = _injectContext;
+  _injectContext = context;
   return previous;
 }
 
