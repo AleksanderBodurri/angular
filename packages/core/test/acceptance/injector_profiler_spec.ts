@@ -193,4 +193,60 @@ describe('injector profiler', () => {
       expect((myServiceBProviderConfiguredEvent?.data as ProviderRecord).multi).toBeFalse();
     });
   });
+
+  describe('getInjectorParent', () => {
+    beforeEach(() => setupFrameworkInjectorProfiler());
+    afterAll(() => setInjectorProfiler(null));
+
+    it('should be able to get the parent of an injector', () => {
+      @Component({selector: 'my-comp', template: 'hello world'})
+      class MyComponent {
+      }
+      TestBed.configureTestingModule({declarations: [MyComponent]});
+      const fixture = TestBed.createComponent(MyComponent);
+
+      expect(getInjectorParent(fixture.debugElement.injector)).toBe(TestBedImpl.inject(Injector))
+    });
+
+    it('should be able to able to climb the injector hierarchy to the NullInjector', () => {
+      @Component({selector: 'my-comp', template: 'hello world'})
+      class MyComponent {
+      }
+      TestBed.configureTestingModule({declarations: [MyComponent]});
+      const fixture = TestBed.createComponent(MyComponent);
+
+      // Pointer to an injector, we'll move this one with the getInjectorParent API
+      let injector: Injector|null = fixture.debugElement.injector
+
+      // Pointer to the parent of our injector above, we'll move this pointer
+      // up the DI tree manually.
+      let parentPointer = TestBedImpl.inject(Injector);
+
+      expect(getInjectorParent(injector)).toBe(parentPointer);
+
+      injector = getInjectorParent(injector);
+      parentPointer = (parentPointer as R3Injector).parent;
+
+      expect(injector).toBeTruthy();
+      expect(parentPointer).toBeTruthy();
+      expect(getInjectorParent(injector!)).toBe(parentPointer);
+
+      injector = getInjectorParent(injector!);
+      parentPointer = (parentPointer as R3Injector).parent;
+
+      expect((injector as R3Injector).source).toBe('Platform: core');
+      expect(parentPointer).toBeInstanceOf(NullInjector);
+      expect(getInjectorParent(injector!)).toBe(parentPointer);
+
+      injector = getInjectorParent(injector!);
+      parentPointer = (parentPointer as R3Injector).parent;
+
+      expect(injector).toBeInstanceOf(NullInjector);
+      expect(parentPointer).toBeUndefined();
+
+      injector = getInjectorParent(injector!);
+
+      expect(injector).toBeNull();
+    });
+  });
 });
