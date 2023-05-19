@@ -72,7 +72,7 @@ interface Record<T> {
 }
 
 function emitProviderConfiguredEvent(provider: SingleProvider): void {
-  let providerType: 'value'|'factory'|'existing'|'type'|'class'|null = null;
+  let providerType: 'value'|'factory'|'existing'|'type'|'class'|undefined;
   if (isValueProvider(provider)) {
     providerType = 'value';
   } else if (isFactoryProvider(provider)) {
@@ -88,7 +88,7 @@ function emitProviderConfiguredEvent(provider: SingleProvider): void {
   injectorProfiler({
     type: InjectorProfilerEventType.ProviderConfigured,
     data: {
-      type: providerType,
+      type: providerType!,
       multi: !isTypeProvider(provider) && provider.multi === true,
       token: isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide)
     }
@@ -398,7 +398,8 @@ export class R3Injector extends EnvironmentInjector {
     // Construct a `Record` for the provider.
     let record: Record<any>;
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
-      const prevInjectContext = setDebugInjectContext({injector: this, token: token as Type<unknown>});
+      const prevInjectContext =
+          setDebugInjectContext({injector: this, token: token as Type<unknown>});
       record = providerToRecord(provider);
       setDebugInjectContext(prevInjectContext);
     } else {
@@ -443,9 +444,7 @@ export class R3Injector extends EnvironmentInjector {
 
           injectorProfiler({
             type: InjectorProfilerEventType.Create,
-            data: {
-              value: record.value as Type<unknown>
-            }
+            data: {value: record.value as Type<unknown>}
           });
         } finally {
           setDebugInjectContext(prevInjectContext);
@@ -534,9 +533,7 @@ function providerToRecord(provider: SingleProvider): Record<any> {
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
       injectorProfiler({
         type: InjectorProfilerEventType.Create,
-        data: {
-          value: provider.useValue as Type<unknown>
-        }
+        data: {value: provider.useValue as Type<unknown>}
       });
     }
 

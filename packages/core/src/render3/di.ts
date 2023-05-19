@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {EnvironmentInjector} from '../di';
 import {isForwardRef, resolveForwardRef} from '../di/forward_ref';
 import {injectRootLimpMode, setDebugInjectContext, setInjectImplementation} from '../di/inject_switch';
 import {Injector} from '../di/injector';
@@ -13,6 +14,7 @@ import {convertToBitFlags} from '../di/injector_compatibility';
 import {InjectorMarkers} from '../di/injector_marker';
 import {InjectFlags, InjectOptions} from '../di/interface/injector';
 import {ProviderToken} from '../di/provider_token';
+import {R3Injector} from '../di/r3_injector';
 import {Type} from '../interface/type';
 import {assertDefined, assertEqual, assertIndexInRange} from '../util/assert';
 import {noSideEffects} from '../util/closure';
@@ -26,16 +28,14 @@ import {injectorProfiler, InjectorProfilerContext, InjectorProfilerEventType} fr
 import {DirectiveDef} from './interfaces/definition';
 import {isFactory, NO_PARENT_INJECTOR, NodeInjectorFactory, NodeInjectorOffset, RelativeInjectorLocation, RelativeInjectorLocationFlags} from './interfaces/injector';
 import {AttributeMarker, TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TNode, TNodeProviderIndexes, TNodeType} from './interfaces/node';
+import {RElement} from './interfaces/renderer_dom';
 import {isComponentDef, isComponentHost} from './interfaces/type_checks';
-import {DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, INJECTOR, LView, LViewFlags, T_HOST, TData, TVIEW, TView, TViewType, HOST} from './interfaces/view';
+import {DECLARATION_COMPONENT_VIEW, DECLARATION_VIEW, EMBEDDED_VIEW_INJECTOR, FLAGS, HOST, INJECTOR, LView, LViewFlags, T_HOST, TData, TVIEW, TView, TViewType} from './interfaces/view';
 import {assertTNodeType} from './node_assert';
 import {enterDI, getCurrentTNode, getLView, leaveDI} from './state';
 import {isNameOnlyAttributeMarker} from './util/attrs_utils';
 import {getParentInjectorIndex, getParentInjectorView, hasParentInjector} from './util/injector_utils';
 import {stringifyForError} from './util/stringify_utils';
-import { EnvironmentInjector } from '../di';
-import { R3Injector } from '../di/r3_injector';
-import { RElement } from './interfaces/renderer_dom';
 
 
 
@@ -424,15 +424,17 @@ export function getOrCreateInjectable<T>(
 
 export function getInjectorParent(injector: Injector): Injector|null {
   if (injector instanceof NodeInjector) {
-    const { tNode, lView } = new DebugNodeInjector(injector);
-    const parentLocation = getParentInjectorLocation(tNode as TElementNode|TContainerNode|TElementContainerNode, lView);
+    const {tNode, lView} = new DebugNodeInjector(injector);
+    const parentLocation = getParentInjectorLocation(
+        tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
 
     if (hasParentInjector(parentLocation)) {
       const parentInjectorIndex = getParentInjectorIndex(parentLocation);
       const parentLView = getParentInjectorView(parentLocation, lView);
       const parentTView = parentLView[TVIEW];
       const parentTNode = parentTView.data[parentInjectorIndex + NodeInjectorOffset.TNODE] as TNode;
-      return new DebugNodeInjector(new NodeInjector(parentTNode as TElementNode|TContainerNode|TElementContainerNode, parentLView));
+      return new DebugNodeInjector(new NodeInjector(
+          parentTNode as TElementNode | TContainerNode | TElementContainerNode, parentLView));
     } else {
       // Get closest module injector
       return (lView[INJECTOR] as any).parentInjector;
@@ -474,10 +476,8 @@ function lookupTokenUsingNodeInjector<T>(
       let prevInjectContext: InjectorProfilerContext|undefined;
       if (typeof ngDevMode === 'undefined' || ngDevMode) {
         const nodeInjector = new NodeInjector(getCurrentTNode() as TElementNode, getLView());
-        prevInjectContext = setDebugInjectContext({
-          injector: new DebugNodeInjector(nodeInjector),
-          token: token as Type<T>
-        });
+        prevInjectContext = setDebugInjectContext(
+            {injector: new DebugNodeInjector(nodeInjector), token: token as Type<T>});
       }
 
       const value = bloomHash(flags);
@@ -485,12 +485,7 @@ function lookupTokenUsingNodeInjector<T>(
         throwProviderNotFoundError(token);
       } else {
         if ((typeof ngDevMode === 'undefined' || ngDevMode) && prevInjectContext !== undefined) {
-          injectorProfiler({
-            type: InjectorProfilerEventType.Create,
-            data: {
-              value
-            }
-          });
+          injectorProfiler({type: InjectorProfilerEventType.Create, data: {value}});
 
           setDebugInjectContext(prevInjectContext);
         }
@@ -668,8 +663,9 @@ export function getNodeInjectable(
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
       let tokenType = (tData[index] as DirectiveDef<unknown>).type || tData[index];
       const nodeInjector = new NodeInjector(tNode, lView);
-      
-      prevInjectContext = setDebugInjectContext({injector: new DebugNodeInjector(nodeInjector), token: tokenType});
+
+      prevInjectContext =
+          setDebugInjectContext({injector: new DebugNodeInjector(nodeInjector), token: tokenType});
     }
 
     const previousInjectImplementation =
@@ -683,12 +679,7 @@ export function getNodeInjectable(
       value = lView[index] = factory.factory(undefined, tData, lView, tNode);
 
       if (typeof ngDevMode === 'undefined' || ngDevMode) {
-        injectorProfiler({
-          type: InjectorProfilerEventType.Create,
-          data: {
-            value
-          }
-        });
+        injectorProfiler({type: InjectorProfilerEventType.Create, data: {value}});
       }
 
       // This code path is hit for both directives and providers.
@@ -777,8 +768,16 @@ function shouldSearchParent(flags: InjectFlags, isFirstHostTNode: boolean): bool
 export class DebugNodeInjector implements Injector {
   constructor(public delegate: NodeInjector) {}
 
-  get hostElement(): RElement | null {
+  get hostElement(): RElement|null {
     return ((this.delegate as any)._lView as LView)[HOST];
+  }
+
+  get lView(): LView {
+    return (this.delegate as any)._lView as LView;
+  }
+  get tNode(): TElementNode|TContainerNode|TElementContainerNode|null {
+    return (this.delegate as any)._tNode as TElementNode | TContainerNode | TElementContainerNode |
+        null;
   }
 
   get(token: any, notFoundValue?: any, flags?: InjectFlags|InjectOptions): any {

@@ -10,7 +10,7 @@ ts_library(
     name = "acceptance_lib",
     testonly = True,
     srcs = glob(
-        ["**/*.ts"],
+        ["injector_profiler_spec.ts"],
         exclude = SPEC_FILES_WITH_FORWARD_REFS,
     ),
     # Visible to //:saucelabs_unit_tests

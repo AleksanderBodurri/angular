@@ -8,14 +8,14 @@
 
 
 import {resolveForwardRef} from '../di/forward_ref';
-import { setDebugInjectContext } from '../di/inject_switch';
+import {setDebugInjectContext} from '../di/inject_switch';
 import {ClassProvider, Provider} from '../di/interface/provider';
 import {isClassProvider, isTypeProvider} from '../di/provider_collection';
 import {providerToFactory} from '../di/r3_injector';
-import { Type } from '../interface/type';
+import {Type} from '../interface/type';
 import {assertDefined} from '../util/assert';
 
-import {diPublicInInjector, getNodeInjectable, getOrCreateNodeInjectorForNode, NodeInjector} from './di';
+import {DebugNodeInjector, diPublicInInjector, getNodeInjectable, getOrCreateNodeInjectorForNode, NodeInjector} from './di';
 import {ɵɵdirectiveInject} from './instructions/all';
 import {DirectiveDef} from './interfaces/definition';
 import {NodeInjectorFactory} from './interfaces/injector';
@@ -81,14 +81,14 @@ function resolveProvider(
 
     let providerFactory: () => any
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
-      const nodeInjector = new NodeInjector(tNode as TElementNode|TContainerNode|TElementContainerNode, lView);
-      const prevInjectContext = setDebugInjectContext({
-        injector: new DebugNodeInjector(nodeInjector),
-        token: token as Type<unknown>
-      });
+      const nodeInjector =
+          new NodeInjector(tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
+      const prevInjectContext = setDebugInjectContext(
+          {injector: new DebugNodeInjector(nodeInjector), token: token as Type<unknown>});
       providerFactory = providerToFactory(provider);
       setDebugInjectContext(prevInjectContext);
-    } else {
+    }
+    else {
       providerFactory = providerToFactory(provider);
     }
 

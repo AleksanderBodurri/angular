@@ -7,14 +7,14 @@
  */
 
 import {getDebugInjectContext} from '../di/inject_switch';
+import {InjectionToken} from '../di/injection_token';
 import {Injector} from '../di/injector';
 import {InjectFlags, InjectOptions} from '../di/interface/injector';
 import {Type} from '../interface/type';
 
+import {DebugNodeInjector, NodeInjector} from './di';
+import {RElement} from './interfaces/renderer_dom';
 import {LView} from './interfaces/view';
-import { DebugNodeInjector, NodeInjector } from './di';
-import { InjectionToken } from '../di/injection_token';
-import { RElement } from './interfaces/renderer_dom';
 
 export const enum InjectorProfilerEventType {
   /**
@@ -56,7 +56,7 @@ export interface InjectorProfilerContext {
    *                 then the inject(ServiceA) call has the factory function
    *                 of ComponentA as a construction context
    */
-   token: Type<unknown>;
+  token: Type<unknown>;
 }
 
 export interface InjectorProfilerEvent {
@@ -64,13 +64,13 @@ export interface InjectorProfilerEvent {
   data: InjectedService|ProviderRecord;
 }
 
-interface ProviderRecord {
+export interface ProviderRecord {
   token: Type<unknown>;
-  type: any;
+  type: 'value'|'factory'|'existing'|'type'|'class';
   multi: boolean;
 }
 
-interface InjectedService {
+export interface InjectedService {
   /**
    * DI token of the Service that is injected
    */
@@ -79,7 +79,7 @@ interface InjectedService {
   /**
    * Value of the injected service
    */
-  value: Type<unknown>;
+  value: unknown;
 
   /*
     Flags that this service was injected with
@@ -154,48 +154,48 @@ export const injectorProfiler = function(injectorEvent: InjectorProfilerEvent): 
 
 export function getDependenciesFromInstantiation(injector: Injector, token: Type<unknown>): any {
   const NOT_FOUND = {};
-  const instance = injector.get(token, NOT_FOUND, { self: true, optional: true });
+  const instance = injector.get(token, NOT_FOUND, {self: true, optional: true});
   if (instance === NOT_FOUND) {
     return;
   }
 
-  let injectorKey: Injector|RElement = injector;
+  let injectorKey: Injector|LView = injector;
   if (injector instanceof NodeInjector) {
-    injectorKey = new DebugNodeInjector(injector).hostElement!;
+    injectorKey = new DebugNodeInjector(injector).lView;
   }
 
   let dependencies = injectorToInstantiatedTokenToDependencies.get(injectorKey)?.get?.(token) || [];
-  dependencies = dependencies.map(dep => ({
-    ...dep,
-    providedIn: instanceToInjector.get(dep.value) || instanceToInjector.get(dep.token!)
-  }));
-  
-  return {
-    instance,
-    dependencies
-  };
+  dependencies = dependencies.map(
+      dep => ({
+        ...dep,
+        providedIn: (typeof dep.value === 'object' ? instanceToInjector.get(dep.value!) :
+                                                     instanceToInjector.get(dep.token!)) ||
+            instanceToInjector.get(dep.token!)
+      }));
+
+  return {instance, dependencies};
 }
 
 export function getInjectorProviders(injector: Injector): ProviderRecord[] {
-  let injectorKey: Injector|RElement = injector;
+  let injectorKey: Injector|LView = injector;
   if (injector instanceof NodeInjector) {
-    injectorKey = new DebugNodeInjector(injector).hostElement!;
+    injectorKey = new DebugNodeInjector(injector).lView;
   }
 
   return injectorToProviders.get(injectorKey) ?? [];
 }
 
-const injectorToInstantiatedTokenToDependencies = new WeakMap<Injector|RElement, WeakMap<Type<unknown>, InjectedService[]>>();
-const instanceToInjector = new WeakMap<Type<unknown>, Injector>();
-const injectorToProviders = new Map<Injector|RElement, ProviderRecord[]>;
-
-(window as any).debugNG = {
-  injectorToInstantiatedTokenToDependencies,
-  instanceToInjector,
-  injectorToProviders
-};
+let injectorToInstantiatedTokenToDependencies =
+    new WeakMap<Injector|LView, WeakMap<Type<unknown>, InjectedService[]>>();
+let instanceToInjector = new WeakMap<object, Injector>();
+let injectorToProviders = new Map<Injector|LView, ProviderRecord[]>();
 
 export function setupFrameworkInjectorProfiler(): void {
+  injectorToInstantiatedTokenToDependencies =
+      new WeakMap<Injector|LView, WeakMap<Type<unknown>, InjectedService[]>>();
+  instanceToInjector = new WeakMap<object, Injector>();
+  injectorToProviders = new Map<Injector|LView, ProviderRecord[]>;
+
   setInjectorProfiler(({data, type}: InjectorProfilerEvent) => {
     const context = getDebugInjectContext();
 
@@ -203,28 +203,38 @@ export function setupFrameworkInjectorProfiler(): void {
       return;
     }
 
-    if (type === InjectorProfilerEventType.Inject) {
-      const { token, value, flags } = data as InjectedService;
+    if (typeof context.token === 'string') {
+      return  // Explicitly do not support string tokens
+    }
 
-      let injectorKey: Injector|RElement = context.injector;
+    if (type === InjectorProfilerEventType.Inject) {
+      const {token, value, flags} = data as InjectedService;
+
+      let injectorKey: Injector|LView = context.injector;
 
       if (context.injector instanceof DebugNodeInjector) {
-        injectorKey = context.injector.hostElement!;
+        injectorKey = context.injector.lView!;
       }
 
       if (!injectorToInstantiatedTokenToDependencies.has(injectorKey)) {
-        injectorToInstantiatedTokenToDependencies.set(injectorKey, new WeakMap<Type<unknown>, InjectedService[]>());
+        injectorToInstantiatedTokenToDependencies.set(
+            injectorKey, new WeakMap<Type<unknown>, InjectedService[]>());
       }
 
       if (!injectorToInstantiatedTokenToDependencies.get(injectorKey)!.has(context.token)) {
-        injectorToInstantiatedTokenToDependencies.get(injectorKey)!.set(context.token, []);
+        try {
+          injectorToInstantiatedTokenToDependencies.get(injectorKey)!.set(context.token, []);
+        } catch {
+          throw new Error();
+        }
       }
 
-      injectorToInstantiatedTokenToDependencies.get(injectorKey)!.get(context.token)!.push({token, value, flags});
+      injectorToInstantiatedTokenToDependencies.get(injectorKey)!.get(context.token)!.push(
+          {token, value, flags});
     }
 
     if (type === InjectorProfilerEventType.Create) {
-      const { value } = data as InjectedService;
+      const {value} = data as InjectedService;
 
       if (value === null || value === undefined || !(value instanceof Object)) {
         if (context.token instanceof InjectionToken) {
@@ -237,10 +247,10 @@ export function setupFrameworkInjectorProfiler(): void {
     }
 
     if (type === InjectorProfilerEventType.ProviderConfigured) {
-      let injectorKey: Injector|RElement = context.injector;
+      let injectorKey: Injector|LView = context.injector;
 
       if (context.injector instanceof DebugNodeInjector) {
-        injectorKey = context.injector.hostElement!;
+        injectorKey = context.injector.lView;
       }
 
       if (!injectorToProviders.has(injectorKey)) {
