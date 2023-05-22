@@ -13,8 +13,13 @@ import {InjectFlags, InjectOptions} from '../di/interface/injector';
 import {Type} from '../interface/type';
 
 import {DebugNodeInjector, NodeInjector} from './di';
-import {RElement} from './interfaces/renderer_dom';
 import {LView} from './interfaces/view';
+import { SingleProvider, walkProviderTree } from '../di/provider_collection';
+import { NgModuleRef as viewEngine_NgModuleRef } from '../linker/ng_module_factory';
+import { getInjectorDef } from '../di/interface/defs';
+import { deepForEach } from '../util/array_utils';
+import { isStandalone } from './definition';
+import { EnvironmentInjector } from '../di/r3_injector';
 
 export const enum InjectorProfilerEventType {
   /**
@@ -27,6 +32,9 @@ export const enum InjectorProfilerEventType {
    */
   Create,
 
+  /**
+   * Emits when an injector configures a provider.
+   */
   ProviderConfigured
 }
 
@@ -46,15 +54,9 @@ export interface InjectorProfilerContext {
   injector: Injector;
 
   /**
-   *  1. The class where the constructor that is calling `inject` is located
+   *  The class where the constructor that is calling `inject` is located
    *      - Example: if ModuleA --provides--> ServiceA --injects--> ServiceB
    *                 then inject(ServiceB) in ServiceA has ServiceA as a construction context
-   *  OR
-   *
-   *  2. The factory function that contains inject calls
-   *      - Example: if ComponentA --injects--> ServiceA
-   *                 then the inject(ServiceA) call has the factory function
-   *                 of ComponentA as a construction context
    */
   token: Type<unknown>;
 }
@@ -65,9 +67,20 @@ export interface InjectorProfilerEvent {
 }
 
 export interface ProviderRecord {
+  /**
+   * DI token that this provider is configuring
+   */
   token: Type<unknown>;
-  type: 'value'|'factory'|'existing'|'type'|'class';
-  multi: boolean;
+
+  /**
+   * The raw provider associated with this ProviderRecord.
+   */
+  provider?: SingleProvider;
+
+  /**
+   * The path of DI containers that were followed to import this provider
+   */
+  importPath?: Type<unknown>[]
 }
 
 export interface InjectedService {
@@ -105,54 +118,16 @@ export const injectorProfiler = function(injectorEvent: InjectorProfilerEvent): 
 
 
 /**
- * For element injectors, we emit the `Inject` event when inject is called inside a factory
- * function, and a `Create` event when the factory function is done executing. It is only after the
- * create event fires that we can definitively determine that the factory function that triggered
- * that creation is the construction context for the services within it.
- *
- * Because of this, we buffer those initial `inject` events until a create event fires.
- *
- * This buffer stores groups of injected services by Injector context and construction context
- *
- * For example, lets say we have the following AppComponent
- *
- * export class AppComponent {
- *   router = inject(Router);
- *
- * }
- *
- * The order of events is as follows:
- * 1. Inject Event for the inject(Router) call:
- *        token: Router,
- *        value: Router instance,
- *        flags: InjectFlags.Default,
- *        context: {
- *          construction: AppComponentFactory,
- *          injector: LView of AppComponent
- *        }
- *
- * 2. buffer stores output of inject event by injector context (LView)
- *    and then by construction context (AppComponentFactory)
- *
- * 3. Create Event as AppComponentFactory resolves to construct AppComponent:
- *       value: AppComponent instance,
- *       context: {
- *         construction: AppComponentFactory,
- *         injector: LView of AppComponent
- *       }
- *
- * 4. buffer data is pulled out by using the injector context and
- *    construction context as keys for the buffer.
+ * 
+ * @param injector An injector instance
+ * @param token a DI token that was constructed by the given injector instance
+ * @returns
+ * an object that contains the created instance of token as well as all of the dependencies that it was instantiated with
+ * OR
+ * undefined if the token was not created within the given injector.
+ * 
  */
-
-// const buffer = new WeakMap<InjectorContext, Map<ConstructionContext, InjectedService[]>>();
-
-// This map will be able to resolve any Angular class instance
-// (component, directive, injector, service, pipe) into an array of its DI dependencies.
-// let injectedInstanceToDependencies =
-//     new WeakMap<InjectionToken<unknown>, InjectedService[]>();
-
-export function getDependenciesFromInstantiation(injector: Injector, token: Type<unknown>): any {
+export function getDependenciesFromInstantiation(injector: Injector, token: Type<unknown>): { instance: unknown; dependencies: InjectedService[] }|undefined {
   const NOT_FOUND = {};
   const instance = injector.get(token, NOT_FOUND, {self: true, optional: true});
   if (instance === NOT_FOUND) {
@@ -178,36 +153,118 @@ export function getDependenciesFromInstantiation(injector: Injector, token: Type
 
 export function getInjectorProviders(injector: Injector): ProviderRecord[] {
   let injectorKey: Injector|LView = injector;
+
   if (injector instanceof NodeInjector) {
     injectorKey = new DebugNodeInjector(injector).lView;
+    return injectorToProviders.get(injectorKey) ?? [];
+  } else if (injector instanceof DebugNodeInjector) {
+    injectorKey = injector.lView;
+    return injectorToProviders.get(injectorKey) ?? [];
   }
 
-  return injectorToProviders.get(injectorKey) ?? [];
+  // A DI container that configured providers. Either a standalone component constructor
+  // or an NgModule constructor.
+  let providerContainer: Type<unknown>;
+
+  // standalone components configure providers through a component def, so we have to
+  // use the standalone component associated with this injector if Injector represents
+  // a standalone components EnvironmentInjector
+  if (standaloneInjectorToComponent.has(injector)) {
+    providerContainer = standaloneInjectorToComponent.get(injector)!;
+  } 
+  // Module injectors configure providers through their NgModule def, so we use the
+  // injector to lookup its NgModuleRef and through that grab its instance
+  else {
+    const defTypeRef = injector.get(viewEngine_NgModuleRef, null, { self: true })!;
+    const containerInstance = defTypeRef.instance ? defTypeRef.instance : defTypeRef;
+    providerContainer = containerInstance.constructor;
+  }
+
+  let providerToPath = new Map<any, any[]>();
+  let discoveredContainers = new Set();
+
+  // Once we find the provider container for this injector, we can
+  // use the walkProviderTree function to run a visitor on each node of the
+  // provider tree. By keeping track of which providers we've already seen
+  // during the traversal we can construct the path leading from the
+  // provider container to the place where the provider was configured,
+  // for each provider.
+  walkProviderTree(providerContainer, (provider, container) => {
+    if (!providerToPath.has(provider)) {
+      providerToPath.set(provider, []);
+    }
+    
+    if (!discoveredContainers.has(container)) {
+      for (const prov of providerToPath.keys()) {
+        const existingImportPath = providerToPath.get(prov)!;
+        if (existingImportPath.length === 0) {
+          continue
+        }
+        
+        const containerDef = getInjectorDef(container)!;
+        const firstContainerInPath = existingImportPath[0];
+
+        let isNextStepInPath = false;
+
+        deepForEach(containerDef.imports, (moduleImport) => {
+          if (isNextStepInPath) {
+            return;
+          }
+  
+          isNextStepInPath = (moduleImport as any).ngModule === firstContainerInPath || moduleImport === firstContainerInPath;
+
+          if (isNextStepInPath) {
+            providerToPath.get(prov)?.unshift(container);
+          }
+        });
+      }
+    }
+
+    providerToPath.get(provider)?.unshift(container);
+
+    discoveredContainers.add(container);
+  }, [], new Set());
+
+  const providerRecords = injectorToProviders.get(injectorKey) ?? [];
+
+  return providerRecords.map(providerRecord => {
+    // We prepend the component constructor in the standalone case
+    // because walkProviderTree does not visit this constructor during it's traversal
+    if (isStandalone(providerContainer)) {
+      const importPath = [providerContainer, ...providerToPath.get(providerRecord.provider) ?? []] ?? [providerContainer];
+      return { ...providerRecord, importPath };
+    }
+    
+    const importPath = providerToPath.get(providerRecord.provider) ?? [providerContainer];
+    return { ...providerRecord, importPath };
+  });
 }
 
 let injectorToInstantiatedTokenToDependencies =
     new WeakMap<Injector|LView, WeakMap<Type<unknown>, InjectedService[]>>();
 let instanceToInjector = new WeakMap<object, Injector>();
-let injectorToProviders = new Map<Injector|LView, ProviderRecord[]>();
+let injectorToProviders = new WeakMap<Injector|LView, ProviderRecord[]>();
+let standaloneInjectorToComponent = new WeakMap<Injector, Type<unknown>>();
 
 export function setupFrameworkInjectorProfiler(): void {
   injectorToInstantiatedTokenToDependencies =
       new WeakMap<Injector|LView, WeakMap<Type<unknown>, InjectedService[]>>();
   instanceToInjector = new WeakMap<object, Injector>();
-  injectorToProviders = new Map<Injector|LView, ProviderRecord[]>;
+  injectorToProviders = new WeakMap<Injector|LView, ProviderRecord[]>();
+  standaloneInjectorToComponent = new WeakMap<Injector, Type<unknown>>();;
 
   setInjectorProfiler(({data, type}: InjectorProfilerEvent) => {
-    const context = getDebugInjectContext();
-
-    if (context === undefined || context.token === null) {
-      return;
-    }
-
-    if (typeof context.token === 'string') {
-      return  // Explicitly do not support string tokens
-    }
-
     if (type === InjectorProfilerEventType.Inject) {
+      const context = getDebugInjectContext();
+
+      if (context === undefined || context.token === null) {
+        return;
+      }
+  
+      if (typeof context.token === 'string') {
+        return  // Explicitly do not support string tokens
+      }
+
       const {token, value, flags} = data as InjectedService;
 
       let injectorKey: Injector|LView = context.injector;
@@ -234,6 +291,16 @@ export function setupFrameworkInjectorProfiler(): void {
     }
 
     if (type === InjectorProfilerEventType.Create) {
+      const context = getDebugInjectContext();
+
+      if (context === undefined || context.token === null) {
+        return;
+      }
+  
+      if (typeof context.token === 'string') {
+        return  // Explicitly do not support string tokens
+      }
+
       const {value} = data as InjectedService;
 
       if (value === null || value === undefined || !(value instanceof Object)) {
@@ -243,10 +310,25 @@ export function setupFrameworkInjectorProfiler(): void {
         return;
       }
 
+      if ((value as any).constructor as Type<unknown> && isStandalone((value as any).constructor as Type<unknown>)) {
+        const environmentInjector = context.injector.get(EnvironmentInjector);
+        standaloneInjectorToComponent.set(environmentInjector, (value as any).constructor as Type<unknown>);
+      }
+
       instanceToInjector.set(value, context.injector);
     }
 
     if (type === InjectorProfilerEventType.ProviderConfigured) {
+      const context = getDebugInjectContext();
+
+      if (context === undefined || context.token === null) {
+        return;
+      }
+  
+      if (typeof context.token === 'string') {
+        return  // Explicitly do not support string tokens
+      }
+
       let injectorKey: Injector|LView = context.injector;
 
       if (context.injector instanceof DebugNodeInjector) {
