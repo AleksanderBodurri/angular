@@ -50,12 +50,13 @@ export function publishDefaultGlobalUtils() {
     * 
     * Supported APIs:
     *               - getDependenciesFromInstantiation
+    *               - getInjectorProviders
     */
     setupFrameworkInjectorProfiler();
     publishGlobalUtil('ɵgetDependenciesFromInstantiation', getDependenciesFromInstantiation);
-    publishGlobalUtil('ɵgetInjectorParent', getInjectorParent);
     publishGlobalUtil('ɵgetInjectorProviders', getInjectorProviders);
-
+    
+    publishGlobalUtil('ɵgetInjectorParent', getInjectorParent);
     /**
      * Warning: this function is *INTERNAL* and should not be relied upon in application's code.
      * The contract of the function might be changed in any release and/or the function can be
