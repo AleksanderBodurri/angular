@@ -89,6 +89,11 @@ export interface InjectedService {
     Flags that this service was injected with
   */
   flags?: InjectFlags|InjectOptions;
+
+  /**
+   * Injector that this service was provided in.
+   */
+  providedIn?: Injector;
 }
 
 export interface InjectorProfiler {
