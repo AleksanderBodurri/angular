@@ -11,14 +11,22 @@ import {Injector} from '../../di/injector';
 import {ViewEncapsulation} from '../../metadata/view';
 import {assertLView} from '../assert';
 import {discoverLocalRefs, getComponentAtNodeIndex, getDirectivesAtNodeIndex, getLContext, readPatchedLView} from '../context_discovery';
-import {getComponentDef, getDirectiveDef} from '../definition';
-import {NodeInjector} from '../di';
+import {getComponentDef, getDirectiveDef, isStandalone} from '../definition';
+import {NodeInjector, DebugNodeInjector} from '../di';
 import {DirectiveDef} from '../interfaces/definition';
 import {TElementNode, TNode, TNodeProviderIndexes} from '../interfaces/node';
 import {CLEANUP, CONTEXT, FLAGS, LView, LViewFlags, TVIEW, TViewType} from '../interfaces/view';
 
 import {getLViewParent, getRootContext} from './view_traversal_utils';
 import {unwrapRNode} from './view_utils';
+
+import { walkProviderTree } from '../../di/provider_collection';
+import { NgModuleRef as viewEngine_NgModuleRef } from '../../linker/ng_module_factory';
+import { getInjectorDef } from '../../di/interface/defs';
+import { deepForEach } from '../../util/array_utils';
+import { InjectedService, ProviderRecord } from '../injector-profiler';
+import { Type } from '../../interface/type';
+import { frameworkDIDebugData } from '../framework-injector-profiler';
 
 
 
@@ -467,4 +475,127 @@ function assertDomElement(value: any) {
   if (typeof Element !== 'undefined' && !(value instanceof Element)) {
     throw new Error('Expecting instance of DOM Element');
   }
+}
+
+/**
+ * 
+ * @param injector An injector instance
+ * @param token a DI token that was constructed by the given injector instance
+ * @returns
+ * an object that contains the created instance of token as well as all of the dependencies that it was instantiated with
+ * OR
+ * undefined if the token was not created within the given injector.
+ * 
+ */
+ export function getDependenciesFromInstantiation(injector: Injector, token: Type<unknown>): { instance: unknown; dependencies: InjectedService[] }|undefined {
+  const NOT_FOUND = {};
+  const instance = injector.get(token, NOT_FOUND, {self: true, optional: true});
+  if (instance === NOT_FOUND) {
+    return;
+  }
+
+  let injectorKey: Injector|LView = injector;
+  if (injector instanceof NodeInjector) {
+    injectorKey = new DebugNodeInjector(injector).lView;
+  }
+
+  let dependencies = frameworkDIDebugData.injectorToInstantiatedTokenToDependencies.get(injectorKey)?.get?.(token) || [];
+  dependencies = dependencies.map(
+      dep => ({
+        ...dep,
+        providedIn: (typeof dep.value === 'object' ? frameworkDIDebugData.instanceToInjector.get(dep.value!) :
+                                                     frameworkDIDebugData.instanceToInjector.get(dep.token!)) ||
+            frameworkDIDebugData.instanceToInjector.get(dep.token!)
+      }));
+
+  return {instance, dependencies};
+}
+
+export function getInjectorProviders(injector: Injector): ProviderRecord[] {
+  let injectorKey: Injector|LView = injector;
+
+  if (injector instanceof NodeInjector) {
+    injectorKey = new DebugNodeInjector(injector).lView;
+    return frameworkDIDebugData.injectorToProviders.get(injectorKey) ?? [];
+  } else if (injector instanceof DebugNodeInjector) {
+    injectorKey = injector.lView;
+    return frameworkDIDebugData.injectorToProviders.get(injectorKey) ?? [];
+  }
+
+  // A DI container that configured providers. Either a standalone component constructor
+  // or an NgModule constructor.
+  let providerContainer: Type<unknown>;
+
+  // standalone components configure providers through a component def, so we have to
+  // use the standalone component associated with this injector if Injector represents
+  // a standalone components EnvironmentInjector
+  if (frameworkDIDebugData.standaloneInjectorToComponent.has(injector)) {
+    providerContainer = frameworkDIDebugData.standaloneInjectorToComponent.get(injector)!;
+  } 
+  // Module injectors configure providers through their NgModule def, so we use the
+  // injector to lookup its NgModuleRef and through that grab its instance
+  else {
+    const defTypeRef = injector.get(viewEngine_NgModuleRef, null, { self: true })!;
+    const containerInstance = defTypeRef.instance ? defTypeRef.instance : defTypeRef;
+    providerContainer = containerInstance.constructor;
+  }
+
+  let providerToPath = new Map<any, any[]>();
+  let discoveredContainers = new Set();
+
+  // Once we find the provider container for this injector, we can
+  // use the walkProviderTree function to run a visitor on each node of the
+  // provider tree. By keeping track of which providers we've already seen
+  // during the traversal we can construct the path leading from the
+  // provider container to the place where the provider was configured,
+  // for each provider.
+  walkProviderTree(providerContainer, (provider, container) => {
+    if (!providerToPath.has(provider)) {
+      providerToPath.set(provider, []);
+    }
+    
+    if (!discoveredContainers.has(container)) {
+      for (const prov of providerToPath.keys()) {
+        const existingImportPath = providerToPath.get(prov)!;
+        if (existingImportPath.length === 0) {
+          continue
+        }
+        
+        const containerDef = getInjectorDef(container)!;
+        const firstContainerInPath = existingImportPath[0];
+
+        let isNextStepInPath = false;
+
+        deepForEach(containerDef.imports, (moduleImport) => {
+          if (isNextStepInPath) {
+            return;
+          }
+  
+          isNextStepInPath = (moduleImport as any).ngModule === firstContainerInPath || moduleImport === firstContainerInPath;
+
+          if (isNextStepInPath) {
+            providerToPath.get(prov)?.unshift(container);
+          }
+        });
+      }
+    }
+
+    providerToPath.get(provider)?.unshift(container);
+
+    discoveredContainers.add(container);
+  }, [], new Set());
+
+  const providerRecords = frameworkDIDebugData.injectorToProviders.get(injectorKey) ?? [];
+
+  return providerRecords.map(providerRecord => {
+    // We prepend the component constructor in the standalone case
+    // because walkProviderTree does not visit this constructor during it's traversal
+    if (isStandalone(providerContainer)) {
+      const importPath = [providerContainer, ...providerToPath.get(providerRecord.provider) ?? []] ?? [providerContainer];
+      return { ...providerRecord, importPath };
+    }
+    
+    const importPath = providerToPath.get(providerRecord.provider) ?? [providerContainer];
+    return { ...providerRecord, importPath };
+  });
 }

@@ -8,10 +8,10 @@
 import {assertDefined} from '../../util/assert';
 import {global} from '../../util/global';
 import { getInjectorParent } from '../di';
-import { getDependenciesFromInstantiation, getInjectorProviders, setupFrameworkInjectorProfiler } from '../injector-profiler';
+import { setupFrameworkInjectorProfiler } from '../framework-injector-profiler';
 import {setProfiler} from '../profiler';
 import {applyChanges} from './change_detection_utils';
-import {getComponent, getContext, getDirectiveMetadata, getDirectives, getHostElement, getInjector, getListeners, getOwningComponent, getRootComponents} from './discovery_utils';
+import {getComponent, getContext, getDependenciesFromInstantiation, getDirectiveMetadata, getDirectives, getHostElement, getInjector, getInjectorProviders, getListeners, getOwningComponent, getRootComponents} from './discovery_utils';
 
 
 

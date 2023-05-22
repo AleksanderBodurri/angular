@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {EnvironmentInjector} from '../di';
 import {isForwardRef, resolveForwardRef} from '../di/forward_ref';
 import {injectRootLimpMode, setDebugInjectContext, setInjectImplementation} from '../di/inject_switch';
 import {Injector} from '../di/injector';
@@ -423,29 +422,37 @@ export function getOrCreateInjectable<T>(
 }
 
 export function getInjectorParent(injector: Injector): Injector|null {
-  if (injector instanceof NodeInjector) {
-    const {tNode, lView} = new DebugNodeInjector(injector);
-    const parentLocation = getParentInjectorLocation(
-        tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
-
-    if (hasParentInjector(parentLocation)) {
-      const parentInjectorIndex = getParentInjectorIndex(parentLocation);
-      const parentLView = getParentInjectorView(parentLocation, lView);
-      const parentTView = parentLView[TVIEW];
-      const parentTNode = parentTView.data[parentInjectorIndex + NodeInjectorOffset.TNODE] as TNode;
-      return new DebugNodeInjector(new NodeInjector(
-          parentTNode as TElementNode | TContainerNode | TElementContainerNode, parentLView));
-    } else {
-      // Get closest module injector
-      return (lView[INJECTOR] as any).parentInjector;
-    }
-  }
-
   if (injector instanceof R3Injector) {
     return injector.parent;
   }
 
-  return null;
+  let tNode: TElementNode | TContainerNode | TElementContainerNode | null;
+  let lView: LView<unknown>;
+  if (injector instanceof DebugNodeInjector) {
+    tNode = injector.tNode;
+    lView = injector.lView;
+  } else if (injector instanceof NodeInjector) {
+    const debugNodeInjector = new DebugNodeInjector(injector);
+    tNode = debugNodeInjector.tNode;
+    lView = debugNodeInjector.lView;
+  } else {
+    return null;
+  }
+
+  const parentLocation = getParentInjectorLocation(
+      tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
+
+  if (hasParentInjector(parentLocation)) {
+    const parentInjectorIndex = getParentInjectorIndex(parentLocation);
+    const parentLView = getParentInjectorView(parentLocation, lView);
+    const parentTView = parentLView[TVIEW];
+    const parentTNode = parentTView.data[parentInjectorIndex + NodeInjectorOffset.TNODE] as TNode;
+    return new DebugNodeInjector(new NodeInjector(
+        parentTNode as TElementNode | TContainerNode | TElementContainerNode, parentLView));
+  } else {
+    // Get closest module injector
+    return (lView[INJECTOR] as any).parentInjector;
+  }
 }
 
 /**

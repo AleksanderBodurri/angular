@@ -7,12 +7,14 @@
  */
 
 import {inject} from '@angular/core';
-import {ClassProvider, Component, destroyPlatform, FactoryProvider, InjectFlags, Injector, NgModule} from '@angular/core/src/core';
+import {ClassProvider, Component, destroyPlatform, InjectFlags, Injector, NgModule} from '@angular/core/src/core';
 import {NullInjector} from '@angular/core/src/di/null_injector';
 import { isClassProvider, isExistingProvider, isFactoryProvider, isTypeProvider, isValueProvider } from '@angular/core/src/di/provider_collection';
 import {EnvironmentInjector, R3Injector} from '@angular/core/src/di/r3_injector';
 import {getInjectorParent} from '@angular/core/src/render3/di';
-import {getInjectorProviders, InjectedService, InjectorProfilerEvent, InjectorProfilerEventType, ProviderRecord, setInjectorProfiler, setupFrameworkInjectorProfiler} from '@angular/core/src/render3/injector-profiler';
+import { setupFrameworkInjectorProfiler } from '@angular/core/src/render3/framework-injector-profiler';
+import {InjectedService, InjectorProfilerEvent, InjectorProfilerEventType, ProviderRecord, setInjectorProfiler} from '@angular/core/src/render3/injector-profiler';
+import { getInjectorProviders } from '@angular/core/src/render3/util/discovery_utils';
 import {TestBed, TestBedImpl} from '@angular/core/testing/src/test_bed';
 import { bootstrapApplication, BrowserModule } from '@angular/platform-browser';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
