@@ -7,12 +7,16 @@
  */
 
 import {inject} from '@angular/core';
-import {Component, InjectFlags, Injector} from '@angular/core/src/core';
+import {ClassProvider, Component, destroyPlatform, FactoryProvider, InjectFlags, Injector, NgModule} from '@angular/core/src/core';
 import {NullInjector} from '@angular/core/src/di/null_injector';
-import {R3Injector} from '@angular/core/src/di/r3_injector';
+import { isClassProvider, isExistingProvider, isFactoryProvider, isTypeProvider, isValueProvider } from '@angular/core/src/di/provider_collection';
+import {EnvironmentInjector, R3Injector} from '@angular/core/src/di/r3_injector';
 import {getInjectorParent} from '@angular/core/src/render3/di';
-import {InjectedService, InjectorProfilerEvent, InjectorProfilerEventType, ProviderRecord, setInjectorProfiler, setupFrameworkInjectorProfiler} from '@angular/core/src/render3/injector-profiler';
+import {getInjectorProviders, InjectedService, InjectorProfilerEvent, InjectorProfilerEventType, ProviderRecord, setInjectorProfiler, setupFrameworkInjectorProfiler} from '@angular/core/src/render3/injector-profiler';
 import {TestBed, TestBedImpl} from '@angular/core/testing/src/test_bed';
+import { bootstrapApplication, BrowserModule } from '@angular/platform-browser';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { withBody } from '@angular/private/testing';
 
 function searchForProfilerEvent(
     events: InjectorProfilerEvent[],
@@ -156,16 +160,15 @@ describe('injector profiler', () => {
          const myServiceEProviderConfiguredEvent = searchForProfilerEvent(
              providerConfiguredEvents, (event) => event.data.token === MyServiceE);
 
-         expect((myServiceProviderConfiguredEvent?.data as ProviderRecord).type).toBe('type');
-         expect((myServiceBProviderConfiguredEvent?.data as ProviderRecord).type).toBe('factory');
-         expect((myServiceCProviderConfiguredEvent?.data as ProviderRecord).type).toBe('existing');
-         expect((myServiceDProviderConfiguredEvent?.data as ProviderRecord).type).toBe('value');
-         expect((myServiceEProviderConfiguredEvent?.data as ProviderRecord).type).toBe('class');
+         expect(isTypeProvider((myServiceProviderConfiguredEvent?.data as ProviderRecord).provider!)).toBeTrue();
+         expect(isFactoryProvider((myServiceBProviderConfiguredEvent?.data as ProviderRecord).provider!)).toBeTrue();
+         expect(isExistingProvider((myServiceCProviderConfiguredEvent?.data as ProviderRecord).provider!)).toBeTrue();
+         expect(isValueProvider((myServiceDProviderConfiguredEvent?.data as ProviderRecord).provider!)).toBeTrue();
+         expect(isClassProvider((myServiceEProviderConfiguredEvent?.data as ProviderRecord).provider!)).toBeTrue();
        });
 
     it('should emit correct DI events when providers are configured with multi', () => {
       class MyService {}
-      class MyServiceB {}
 
       @Component({
         selector: 'my-comp',
@@ -173,7 +176,7 @@ describe('injector profiler', () => {
         providers: [
           {provide: MyService, useClass: MyService, multi: true},
           {provide: MyService, useFactory: () => new MyService(), multi: true},
-          {provide: MyService, useValue: 'hello world', multi: true}, MyServiceB
+          {provide: MyService, useValue: 'hello world', multi: true}, 
         ]
       })
       class MyComponent {
@@ -186,12 +189,162 @@ describe('injector profiler', () => {
       // MyService should have been configured
       const myServiceProviderConfiguredEvent = searchForProfilerEvent(
           providerConfiguredEvents, (event) => event.data.token === MyService);
-      const myServiceBProviderConfiguredEvent = searchForProfilerEvent(
-          providerConfiguredEvents, (event) => event.data.token === MyServiceB);
-
-      expect((myServiceProviderConfiguredEvent?.data as ProviderRecord).multi).toBeTrue();
-      expect((myServiceBProviderConfiguredEvent?.data as ProviderRecord).multi).toBeFalse();
+      expect(((myServiceProviderConfiguredEvent?.data as ProviderRecord)?.provider as ClassProvider).multi).toBeTrue();
     });
+  });
+
+  describe('getInjectorParent', () => {
+    beforeEach(() => setupFrameworkInjectorProfiler());
+    afterAll(() => setInjectorProfiler(null));
+
+    it('should be able to get the providers from a components injector', () => {
+      class MyService {}
+      @Component({
+        selector: 'my-comp',
+        template: 'hello world',
+        providers: [
+          MyService
+        ]
+      })
+      class MyComponent {
+      }
+      TestBed.configureTestingModule({declarations: [MyComponent]});
+      const fixture = TestBed.createComponent(MyComponent);
+
+      const providers = getInjectorProviders(fixture.debugElement.injector);
+      expect(providers.length).toBe(1);
+      expect(providers[0].token).toBe(MyService);
+      expect(providers[0].provider).toBe(MyService);
+    });
+
+    it('should be able to determine import paths after module provider flattening in the NgModule bootstrap case', 
+      withBody('<my-comp></my-comp>', async () => {
+      destroyPlatform();
+  
+      class MyService {}
+      class MyServiceB {}
+      
+      @NgModule({
+        providers: [MyService]
+      })
+      class ModuleA {}
+      @NgModule({
+        imports: [ModuleA],
+      })
+      class ModuleB {}
+      
+      @NgModule({
+        providers: [MyServiceB]
+      })
+      class ModuleC {}
+
+      @NgModule({
+        imports: [ModuleB, ModuleC],
+      })
+      class ModuleD {}
+
+      @Component({
+        selector: 'my-comp',
+        template: 'hello world',
+      })
+      class MyComponent {}
+
+      @NgModule({
+        imports: [ModuleD, BrowserModule],
+        declarations: [MyComponent],
+        bootstrap: [MyComponent],
+      })
+      class AppModule {}
+
+      const ngModuleRef = await platformBrowserDynamic().bootstrapModule(AppModule);
+
+      const appModuleInjector = ngModuleRef.injector;
+      const providers = getInjectorProviders(appModuleInjector);
+
+      const myServiceProvider = providers.find(provider => provider.token === MyService);
+      const myServiceBProvider = providers.find(provider => provider.token === MyServiceB);
+      
+      expect(myServiceProvider).toBeTruthy();
+      expect(myServiceBProvider).toBeTruthy();
+
+      expect(myServiceProvider!.importPath).toBeInstanceOf(Array)
+      expect(myServiceProvider!.importPath!.length).toBe(4);
+      expect(myServiceProvider!.importPath![0]).toBe(AppModule);
+      expect(myServiceProvider!.importPath![1]).toBe(ModuleD);
+      expect(myServiceProvider!.importPath![2]).toBe(ModuleB);
+      expect(myServiceProvider!.importPath![3]).toBe(ModuleA);
+
+      expect(myServiceBProvider!.importPath).toBeInstanceOf(Array)
+      expect(myServiceBProvider!.importPath!.length).toBe(3);
+      expect(myServiceBProvider!.importPath![0]).toBe(AppModule);
+      expect(myServiceBProvider!.importPath![1]).toBe(ModuleD);
+      expect(myServiceBProvider!.importPath![2]).toBe(ModuleC);
+
+      ngModuleRef.destroy();
+      destroyPlatform();
+    }));
+
+    it('should be able to determine import paths after module provider flattening in the standalone component case', 
+      withBody('<my-comp></my-comp>', async () => {
+      destroyPlatform();
+  
+      class MyService {}
+      class MyServiceB {}
+      
+      @NgModule({
+        providers: [MyService]
+      })
+      class ModuleA {}
+      @NgModule({
+        imports: [ModuleA],
+      })
+      class ModuleB {}
+      
+      @NgModule({
+        providers: [MyServiceB]
+      })
+      class ModuleC {}
+
+      @NgModule({
+        imports: [ModuleB, ModuleC],
+      })
+      class ModuleD {}
+
+      @Component({
+        selector: 'my-comp',
+        template: 'hello world',
+        imports: [ModuleD],
+        standalone: true
+      })
+      class MyStandaloneComponent {
+      }
+
+      const applicationRef = await bootstrapApplication(MyStandaloneComponent);
+      const appComponentEnvironmentInjector = applicationRef.components[0].injector.get(EnvironmentInjector);
+      const providers = getInjectorProviders(appComponentEnvironmentInjector);
+
+      const myServiceProvider = providers.find(provider => provider.token === MyService);
+      const myServiceBProvider = providers.find(provider => provider.token === MyServiceB);
+      
+      expect(myServiceProvider).toBeTruthy();
+      expect(myServiceBProvider).toBeTruthy();
+
+      expect(myServiceProvider!.importPath).toBeInstanceOf(Array)
+      expect(myServiceProvider!.importPath!.length).toBe(4);
+      expect(myServiceProvider!.importPath![0]).toBe(MyStandaloneComponent);
+      expect(myServiceProvider!.importPath![1]).toBe(ModuleD);
+      expect(myServiceProvider!.importPath![2]).toBe(ModuleB);
+      expect(myServiceProvider!.importPath![3]).toBe(ModuleA);
+
+      expect(myServiceBProvider!.importPath).toBeInstanceOf(Array)
+      expect(myServiceBProvider!.importPath!.length).toBe(3);
+      expect(myServiceBProvider!.importPath![0]).toBe(MyStandaloneComponent);
+      expect(myServiceBProvider!.importPath![1]).toBe(ModuleD);
+      expect(myServiceBProvider!.importPath![2]).toBe(ModuleC);
+
+      applicationRef.destroy();
+      destroyPlatform();
+    }));
   });
 
   describe('getInjectorParent', () => {
