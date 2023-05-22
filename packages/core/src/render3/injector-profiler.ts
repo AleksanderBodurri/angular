@@ -71,7 +71,7 @@ export interface ProviderRecord {
   /**
    * The path of DI containers that were followed to import this provider
    */
-  importPath?: Type<unknown>[]
+  importPath?: Type<unknown>[];
 }
 
 export interface InjectedService {

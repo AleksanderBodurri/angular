@@ -558,7 +558,7 @@ export function getInjectorProviders(injector: Injector): ProviderRecord[] {
       for (const prov of providerToPath.keys()) {
         const existingImportPath = providerToPath.get(prov)!;
         if (existingImportPath.length === 0) {
-          continue
+          continue;
         }
         
         const containerDef = getInjectorDef(container)!;

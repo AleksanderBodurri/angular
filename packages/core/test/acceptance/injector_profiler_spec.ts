@@ -271,14 +271,14 @@ describe('injector profiler', () => {
         expect(myServiceProvider).toBeTruthy();
         expect(myServiceBProvider).toBeTruthy();
 
-        expect(myServiceProvider!.importPath).toBeInstanceOf(Array)
+        expect(myServiceProvider!.importPath).toBeInstanceOf(Array);
         expect(myServiceProvider!.importPath!.length).toBe(4);
         expect(myServiceProvider!.importPath![0]).toBe(AppModule);
         expect(myServiceProvider!.importPath![1]).toBe(ModuleD);
         expect(myServiceProvider!.importPath![2]).toBe(ModuleB);
         expect(myServiceProvider!.importPath![3]).toBe(ModuleA);
 
-        expect(myServiceBProvider!.importPath).toBeInstanceOf(Array)
+        expect(myServiceBProvider!.importPath).toBeInstanceOf(Array);
         expect(myServiceBProvider!.importPath!.length).toBe(3);
         expect(myServiceBProvider!.importPath![0]).toBe(AppModule);
         expect(myServiceBProvider!.importPath![1]).toBe(ModuleD);
@@ -332,14 +332,14 @@ describe('injector profiler', () => {
         expect(myServiceProvider).toBeTruthy();
         expect(myServiceBProvider).toBeTruthy();
 
-        expect(myServiceProvider!.importPath).toBeInstanceOf(Array)
+        expect(myServiceProvider!.importPath).toBeInstanceOf(Array);
         expect(myServiceProvider!.importPath!.length).toBe(4);
         expect(myServiceProvider!.importPath![0]).toBe(MyStandaloneComponent);
         expect(myServiceProvider!.importPath![1]).toBe(ModuleD);
         expect(myServiceProvider!.importPath![2]).toBe(ModuleB);
         expect(myServiceProvider!.importPath![3]).toBe(ModuleA);
 
-        expect(myServiceBProvider!.importPath).toBeInstanceOf(Array)
+        expect(myServiceBProvider!.importPath).toBeInstanceOf(Array);
         expect(myServiceBProvider!.importPath!.length).toBe(3);
         expect(myServiceBProvider!.importPath![0]).toBe(MyStandaloneComponent);
         expect(myServiceBProvider!.importPath![1]).toBe(ModuleD);
@@ -359,10 +359,10 @@ describe('injector profiler', () => {
         destroyPlatform();
 
         @Injectable()
-        class MyService { myServiceB = inject(MyServiceB) }
+        class MyService { myServiceB = inject(MyServiceB); }
         
         @Injectable()
-        class MyServiceB { router = inject(Router) }
+        class MyServiceB { router = inject(Router); }
 
         @NgModule({
           providers: [MyService]
@@ -450,12 +450,11 @@ describe('getInjectorParent', () => {
 
   it('should be able to get the parent of an injector', () => {
     @Component({ selector: 'my-comp', template: 'hello world' })
-    class MyComponent {
-    }
+    class MyComponent {}
     TestBed.configureTestingModule({ declarations: [MyComponent] });
     const fixture = TestBed.createComponent(MyComponent);
 
-    expect(getInjectorParent(fixture.debugElement.injector)).toBe(TestBedImpl.inject(Injector))
+    expect(getInjectorParent(fixture.debugElement.injector)).toBe(TestBedImpl.inject(Injector));
   });
 
   it('should be able to able to climb the injector hierarchy to the NullInjector', () => {
@@ -466,7 +465,7 @@ describe('getInjectorParent', () => {
     const fixture = TestBed.createComponent(MyComponent);
 
     // Pointer to an injector, we'll move this one with the getInjectorParent API
-    let injector: Injector | null = fixture.debugElement.injector
+    let injector: Injector | null = fixture.debugElement.injector;
 
     // Pointer to the parent of our injector above, we'll move this pointer
     // up the DI tree manually.

@@ -79,7 +79,7 @@ function resolveProvider(
     const tNode = getCurrentTNode()!;
     let token: any = isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide);
 
-    let providerFactory: () => any
+    let providerFactory: () => any;
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
       const nodeInjector =
           new NodeInjector(tNode as TElementNode | TContainerNode | TElementContainerNode, lView);
