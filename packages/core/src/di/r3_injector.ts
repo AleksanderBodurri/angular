@@ -71,26 +71,12 @@ interface Record<T> {
   multi: any[]|undefined;
 }
 
-function emitProviderConfiguredEvent(provider: SingleProvider): void {
-  let providerType: 'value'|'factory'|'existing'|'type'|'class'|undefined;
-  if (isValueProvider(provider)) {
-    providerType = 'value';
-  } else if (isFactoryProvider(provider)) {
-    providerType = 'factory';
-  } else if (isExistingProvider(provider)) {
-    providerType = 'existing';
-  } else if (isTypeProvider(provider)) {
-    providerType = 'type';
-  } else if (isClassProvider(provider)) {
-    providerType = 'class';
-  }
-
+export function emitProviderConfiguredEvent(provider: SingleProvider): void {
   injectorProfiler({
     type: InjectorProfilerEventType.ProviderConfigured,
     data: {
-      type: providerType!,
-      multi: !isTypeProvider(provider) && provider.multi === true,
-      token: isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide)
+      token: isTypeProvider(provider) ? provider : resolveForwardRef(provider.provide),
+      provider
     }
   });
 }
@@ -396,14 +382,20 @@ export class R3Injector extends EnvironmentInjector {
         isTypeProvider(provider) ? provider : resolveForwardRef(provider && provider.provide);
 
     // Construct a `Record` for the provider.
-    let record: Record<any>;
+    let record = providerToRecord(provider);
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
       const prevInjectContext =
           setDebugInjectContext({injector: this, token: token as Type<unknown>});
-      record = providerToRecord(provider);
+
+      if (isValueProvider(provider)) {
+        injectorProfiler({
+          type: InjectorProfilerEventType.Create,
+          data: {value: provider.useValue as Type<unknown>}
+        });
+      }
+
+      emitProviderConfiguredEvent(provider);
       setDebugInjectContext(prevInjectContext);
-    } else {
-      record = providerToRecord(provider);
     }
 
     if (!isTypeProvider(provider) && provider.multi === true) {
@@ -530,13 +522,6 @@ function getUndecoratedInjectableFactory(token: Function) {
 
 function providerToRecord(provider: SingleProvider): Record<any> {
   if (isValueProvider(provider)) {
-    if (typeof ngDevMode === 'undefined' || ngDevMode) {
-      injectorProfiler({
-        type: InjectorProfilerEventType.Create,
-        data: {value: provider.useValue as Type<unknown>}
-      });
-    }
-
     return makeRecord(undefined, provider.useValue);
   } else {
     const factory: (() => any)|undefined = providerToFactory(provider);
@@ -554,10 +539,6 @@ export function providerToFactory(
   let factory: (() => any)|undefined = undefined;
   if (ngDevMode && isEnvironmentProviders(provider)) {
     throwInvalidProviderError(undefined, providers, provider);
-  }
-
-  if (typeof ngDevMode === 'undefined' || ngDevMode) {
-    emitProviderConfiguredEvent(provider);
   }
 
   if (isTypeProvider(provider)) {

@@ -11,7 +11,7 @@ import {resolveForwardRef} from '../di/forward_ref';
 import {setDebugInjectContext} from '../di/inject_switch';
 import {ClassProvider, Provider} from '../di/interface/provider';
 import {isClassProvider, isTypeProvider} from '../di/provider_collection';
-import {providerToFactory} from '../di/r3_injector';
+import {emitProviderConfiguredEvent, providerToFactory} from '../di/r3_injector';
 import {Type} from '../interface/type';
 import {assertDefined} from '../util/assert';
 
@@ -86,6 +86,7 @@ function resolveProvider(
       const prevInjectContext = setDebugInjectContext(
           {injector: new DebugNodeInjector(nodeInjector), token: token as Type<unknown>});
       providerFactory = providerToFactory(provider);
+      emitProviderConfiguredEvent(provider);
       setDebugInjectContext(prevInjectContext);
     }
     else {
