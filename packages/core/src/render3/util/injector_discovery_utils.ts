@@ -186,6 +186,10 @@ function getProviderImportsContainer(injector: Injector): Type<unknown>|null {
     return null;
   }
 
+  if (defTypeRef.instance === undefined) {
+    return null;
+  }
+
   return defTypeRef.instance.constructor;
 }
 
@@ -386,14 +390,28 @@ function walkProviderTreeToDiscoverImportPaths(
  * @returns an array of objects representing the providers of the given injector
  */
 function getEnvironmentInjectorProviders(injector: EnvironmentInjector): ProviderRecord[] {
+  const providerRecords = getFrameworkDIDebugData().resolverToProviders.get(injector) ?? [];
+
+  if (isPlatformInjector(injector)) {
+    return providerRecords;
+  }
+
   const providerImportsContainer = getProviderImportsContainer(injector);
   if (providerImportsContainer === null) {
+    // There is a special case where the bootstrapped component does not
+    // import any NgModules. In this case the environment injector connected to
+    // that component is the root injector, which does not have a provider imports
+    // container (and thus no concept of module import paths). Therefore we simply
+    // return the provider records as is.
+    if (isRootInjector(injector)) {
+      return providerRecords;
+    }
+
     throwError('Could not determine where injector providers were configured.');
   }
 
   const providerToPath = getProviderImportPaths(providerImportsContainer);
-  const providerRecords = getFrameworkDIDebugData().resolverToProviders.get(injector) ?? [];
-
+  
   return providerRecords.map(providerRecord => {
     let importPath = providerToPath.get(providerRecord.provider) ?? [providerImportsContainer];
 
@@ -407,6 +425,22 @@ function getEnvironmentInjectorProviders(injector: EnvironmentInjector): Provide
 
     return {...providerRecord, importPath};
   });
+}
+
+function isPlatformInjector(injector: Injector) {
+  if (!(injector instanceof R3Injector)) {
+    return false;
+  }
+
+  return injector.scopes.has('platform');
+}
+
+function isRootInjector(injector: Injector) {
+  if (!(injector instanceof R3Injector)) {
+    return false;
+  }
+
+  return injector.scopes.has('root');
 }
 
 /**
@@ -451,6 +485,13 @@ export function getInjectorMetadata(injector: Injector):
   }
 
   if (injector instanceof R3Injector) {
+    if (injector.scopes.has('platform')) {
+      return {type: 'environment', source: 'Platform'};
+    }
+    if (injector.scopes.has('root')) {
+      return {type: 'environment', source: 'Root'};
+    }
+
     return {type: 'environment', source: injector.source ?? null};
   }
 
