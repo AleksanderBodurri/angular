@@ -186,7 +186,9 @@ function getProviderImportsContainer(injector: Injector): Type<unknown>|null {
     return null;
   }
 
-  if (defTypeRef.instance === undefined) {
+  // In standalone applications, the root environment injector created by bootstrapApplication
+  // may have no associated "instance".
+  if (defTypeRef.instance === null) {
     return null;
   }
 
