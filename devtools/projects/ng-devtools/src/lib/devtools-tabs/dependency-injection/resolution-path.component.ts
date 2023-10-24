@@ -50,11 +50,13 @@ export class ResolutionPathComponent implements OnDestroy {
 
   constructor() {
     afterRender(() => {
-      this.injectorTree = new InjectorTreeVisualizer(new D3GraphRenderer(
-          this.svgContainer.nativeElement, this.g.nativeElement, this.orientation,
-          this.orientation === 'horizontal' ? [75, 200] : [20, 75]));
+      this.injectorTree = new InjectorTreeVisualizer(
+          new D3GraphRenderer(this.svgContainer.nativeElement, this.g.nativeElement, {
+            orientation: this.orientation,
+            nodeSize: this.orientation === 'horizontal' ? [75, 200] : [20, 75]
+          }));
 
-      this.injectorTree.render([this.pathNode]);
+      this.injectorTree.render(this.pathNode);
     });
   }
 

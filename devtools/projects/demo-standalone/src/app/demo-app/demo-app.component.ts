@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, inject, Injector, Input, Output, ViewChild, ViewEncapsulation} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, inject, Injectable, Injector, Input, Output, ViewChild, ViewEncapsulation} from '@angular/core';
 import {createCustomElement} from '@angular/elements';
 import {RouterOutlet} from '@angular/router';
 import {initializeMessageBus} from 'ng-devtools-backend';
@@ -16,6 +16,9 @@ import {ZoneUnawareIFrameMessageBus} from '../../../../../src/zone-unaware-ifram
 import {HeavyComponent} from './heavy.component';
 import {ZippyComponent} from './zippy.component';
 
+@Injectable()
+export class DemoAppService {}
+
 @Component({
   selector: 'app-demo-component',
   templateUrl: './demo-app.component.html',
@@ -23,7 +26,8 @@ import {ZippyComponent} from './zippy.component';
   encapsulation: ViewEncapsulation.None,
   standalone: true,
   imports: [HeavyComponent, RouterOutlet],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  providers: [DemoAppService]
 })
 export class DemoAppComponent {
   @ViewChild(ZippyComponent) zippy: ZippyComponent;

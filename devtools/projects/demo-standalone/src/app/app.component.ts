@@ -6,15 +6,27 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component} from '@angular/core';
+import {Component, Injectable, NgModule, inject} from '@angular/core';
 import {Router, RouterOutlet} from '@angular/router';
+
+@Injectable()
+export class MyService {
+}
+@Injectable({ providedIn: 'root' })
+export class MyServiceB {
+}
+
+@NgModule({providers: [MyService]})
+export class TestModule {
+}
 
 @Component({
   selector: 'app-root',
   template: `<router-outlet></router-outlet>`,
   standalone: true,
-  imports: [RouterOutlet]
+  imports: [RouterOutlet, TestModule]
 })
 export class AppComponent {
+  a = inject(MyServiceB);
   constructor(public router: Router) {}
 }

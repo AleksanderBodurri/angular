@@ -7,7 +7,7 @@
  */
 
 import {NgForOf} from '@angular/common';
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output, Pipe, PipeTransform} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, inject, OnDestroy, OnInit, Output, Pipe, PipeTransform} from '@angular/core';
 import {RouterLink} from '@angular/router';
 
 import {SamplePipe} from './sample.pipe';
@@ -103,11 +103,11 @@ export class TodosComponent implements OnInit, OnDestroy {
 
   private hashListener: EventListenerOrEventListenerObject;
 
-  constructor(private cdRef: ChangeDetectorRef) {}
+  private cdRef = inject(ChangeDetectorRef, {optional: true})
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
-      window.addEventListener('hashchange', (this.hashListener = () => this.cdRef.markForCheck()));
+      window.addEventListener('hashchange', (this.hashListener = () => this.cdRef!.markForCheck()));
     }
   }
 

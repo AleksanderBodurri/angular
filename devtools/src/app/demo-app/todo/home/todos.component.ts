@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, inject, OnDestroy, OnInit, Output} from '@angular/core';
 
 import {Todo} from './todo';
 import {TodoFilter} from './todos.pipe';
@@ -42,11 +42,11 @@ export class TodosComponent implements OnInit, OnDestroy {
 
   private hashListener: EventListenerOrEventListenerObject;
 
-  constructor(private cdRef: ChangeDetectorRef) {}
+  private cdRef = inject(ChangeDetectorRef, {optional: true})
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
-      window.addEventListener('hashchange', (this.hashListener = () => this.cdRef.markForCheck()));
+      window.addEventListener('hashchange', (this.hashListener = () => this.cdRef!.markForCheck()));
     }
   }
 

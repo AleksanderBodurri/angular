@@ -29,7 +29,7 @@ import {ZippyComponent} from './zippy.component';
         children: [
           {
             path: '',
-            loadChildren: () => import('./todo/app.module').then((m) => m.AppModule),
+            loadChildren: () => import('./todo/app.module').then((m) => m.TodoModule),
           },
         ],
       },

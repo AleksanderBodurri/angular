@@ -33,7 +33,10 @@ export interface InjectorTreeD3Node {
 }
 
 export abstract class GraphRenderer<T, U> {
-  abstract render(graph: T[]): void;
+  abstract render(graph: T): void;
+  abstract getNodeById(id: string): U;
+  abstract getGraphElement(): HTMLElement;
+  abstract snapToNode(node: U): void;
 
   protected nodeClickListeners: ((pointerEvent: PointerEvent, node: U) => void)[] = [];
   protected nodeMouseoverListeners: ((pointerEvent: PointerEvent, node: U) => void)[] = [];
@@ -62,21 +65,49 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
   constructor(
       private _containerElement: HTMLElement,
       private _graphElement: HTMLElement,
-      private _orientation: 'horizontal'|'vertical' = 'horizontal',
-      private _nodeSize: [width: number, height: number] = [70, 200],
-      private _nodeSeperation: number = 2,
+      public config: {
+        orientation?: 'horizontal'|'vertical',
+        nodeSize?: [width: number, height: number],
+        nodeSeperation?: number,
+      } = {},
   ) {
     super();
+
+    if (config.orientation === undefined) {
+      config.orientation = 'horizontal';
+    }
+    if (config.nodeSize === undefined) {
+      config.nodeSize = [70, 200];
+    }
+    if (config.nodeSeperation === undefined) {
+      config.nodeSeperation = 2;
+    }
   }
 
   private d3 = d3;
+
+  override snapToNode(node: InjectorTreeD3Node): void {
+    const id = node.data.injector.id;
+    const element = this.getGraphElement().querySelector(`.node[data-id="${id}"]`);
+    if (element) {
+      element.scrollIntoView({behavior: 'smooth'});
+    }
+  }
+
+  override getGraphElement(): HTMLElement {
+    return this._graphElement;
+  }
+
+  override getNodeById(id: string): InjectorTreeD3Node {
+    return this.d3.select(`.node[data-id="${id}"]`).datum();
+  }
 
   override cleanup(): void {
     super.cleanup();
     this.d3.select(this._graphElement).selectAll('*').remove();
   }
 
-  override render(injectorGraph: InjectorTreeNode[]): void {
+  override render(injectorGraph: InjectorTreeNode): void {
     // cleanup old graph
     this.cleanup();
 
@@ -87,15 +118,21 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
     const svgPadding = 20;
 
     // Compute the new tree layout.
-    tree.nodeSize(this._nodeSize);
-    if (this._nodeSeperation !== undefined) {
+    tree.nodeSize(this.config.nodeSize);
+    if (this.config.nodeSeperation !== undefined) {
       tree.separation((a, b) => {
-        return this._nodeSeperation;
+        return this.config.nodeSeperation;
       });
     }
 
-    const root = injectorGraph[0];
-    const nodes = tree(this.d3.hierarchy(root, (node: InjectorTreeD3Node) => node.children));
+    const root = injectorGraph;
+    const nodes = tree(
+      this.d3.hierarchy(root, (node: InjectorTreeD3Node) => node.children),
+      {
+        sort: (a, b) => d3.descending(a.height, b.height),
+        tree: this.d3.cluster,
+      }
+    );
 
     arrowDefId++;
     svg.append('svg:defs')
@@ -118,7 +155,14 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
         .data(nodes.descendants().slice(1))
         .enter()
         .append('path')
-        .attr('class', 'link')
+        .attr('class', (node: InjectorTreeD3Node) => {
+          const parentId = node.parent?.data?.injector?.id;
+          if (parentId === 'N/A') {
+            return 'link-hidden';
+          }
+          
+          return `link`;
+        })
         .attr(
             'data-id',
             (node: InjectorTreeD3Node) => {
@@ -133,7 +177,7 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
         .attr('marker-end', `url(#end${arrowDefId})`)
         .attr('d', (node: InjectorTreeD3Node) => {
           const parent = node.parent!;
-          if (this._orientation === 'horizontal') {
+          if (this.config.orientation === 'horizontal') {
             return `
                     M${node.y},${node.x}
                     C${(node.y + parent.y) / 2},
@@ -156,10 +200,27 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
             .data(nodes.descendants())
             .enter()
             .append('g')
-            .attr('class', 'node')
+            .attr('class', (node: InjectorTreeD3Node) => {
+              if (node.data.injector.id === 'N/A') {
+                return 'node-hidden';
+              }
+              return `node`;
+            })
+            .attr(
+                'data-component-id',
+                (node: InjectorTreeD3Node) => {
+                  const injector = node.data.injector;
+                  if (injector.type === 'element') {
+                    return injector.node?.component?.id ?? -1;
+                  }
+
+                  return -1
+                })
             .attr(
                 'data-id',
                 (node: InjectorTreeD3Node) => {
+                  const injector = node.data.injector;
+
                   return node.data.injector.id;
                 })
             .on('click',
@@ -176,7 +237,7 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
                 })
 
             .attr('transform', (node: InjectorTreeD3Node) => {
-              if (this._orientation === 'horizontal') {
+              if (this.config.orientation === 'horizontal') {
                 return `translate(${node.y},${node.x})`;
               }
 
@@ -193,23 +254,23 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
 
     node.append('text')
         .attr(
-            this._orientation === 'horizontal' ? 'dy' : 'dx',
+            this.config.orientation === 'horizontal' ? 'dy' : 'dx',
             (node: InjectorTreeD3Node) =>
                 (node.depth === 0 || !node.children ? '0.6em' : '-1.55em'))
         .attr(
-            this._orientation === 'horizontal' ? 'dx' : 'dy',
+            this.config.orientation === 'horizontal' ? 'dx' : 'dy',
             (node: InjectorTreeD3Node):
                 number => {
                   let textOffset = 0;
 
                   if (!hasParent(node) && !hasChildren(node)) {
-                    textOffset = this._orientation === 'horizontal' ? 15 : 5;
+                    textOffset = this.config.orientation === 'horizontal' ? 15 : 5;
                   } else if (hasParent(node) && hasChildren(node)) {
-                    textOffset = this._orientation === 'horizontal' ? 8 : -8;
+                    textOffset = this.config.orientation === 'horizontal' ? 8 : -8;
                   } else if (!hasParent(node) && hasChildren(node)) {
                     textOffset = -15;
                   } else {
-                    textOffset = this._orientation === 'horizontal' ? 15 : 5;
+                    textOffset = this.config.orientation === 'horizontal' ? 15 : 5;
                   }
 
                   return textOffset;
@@ -241,6 +302,29 @@ export class D3GraphRenderer extends GraphRenderer<InjectorTreeNode, InjectorTre
 export class InjectorTreeVisualizer {
   constructor(private graphRenderer: GraphRenderer<InjectorTreeNode, InjectorTreeD3Node>) {}
 
+  snapToNode(node: InjectorTreeD3Node): void {
+    this.graphRenderer.snapToNode(node);
+  }
+
+  getNodeByComponentId(id: number): InjectorTreeD3Node|null {
+    const graphElement = this.graphRenderer.getGraphElement();
+    const element = graphElement.querySelector(`.node[data-component-id="${id}"]`);
+    if (element === null) {
+      return null;
+    }
+
+    const injectorId = element.getAttribute('data-id');
+    if (injectorId === null) {
+      return null;
+    }
+
+    return this.getNodeById(injectorId);
+  }
+
+  getNodeById(id: string): InjectorTreeD3Node|null {
+    return this.graphRenderer.getNodeById(id);
+  }
+
   onInjectorClick(cb: (pointerEvent: PointerEvent, node: InjectorTreeD3Node) => void): void {
     this.graphRenderer.onNodeClick(cb);
   }
@@ -253,7 +337,7 @@ export class InjectorTreeVisualizer {
     this.graphRenderer.onNodeMouseout(cb);
   }
 
-  render(injectorTree: InjectorTreeNode[]): void {
+  render(injectorTree: InjectorTreeNode): void {
     this.graphRenderer.render(injectorTree);
   }
 

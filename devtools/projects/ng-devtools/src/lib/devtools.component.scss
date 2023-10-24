@@ -93,6 +93,10 @@
 
 :host {
   ::ng-deep {
+    .node-hidden, .link-hidden {
+      display: none;
+    }
+
     .link {
       stroke: #9b9b9b;
       stroke-width: 3px;
@@ -105,16 +109,25 @@
 
     .node {
       cursor: pointer;
+      scroll-margin: 50px;
 
       &.highlighted {
-        text {
-          font-weight: 600;
+        circle {
+          fill: #4da1ff;
+          stroke-width: 0;
         }
 
-        circle {
-          stroke: #4da1ff;
-          fill: #fff;
-          stroke-width: 5px;
+        &.selected {
+          text {
+            font-weight: 600;
+          }
+
+          circle {
+
+            stroke: #4da1ff;
+            fill: #fff;
+            stroke-width: 5px;
+          }
         }
       }
     }
@@ -172,9 +185,13 @@
   .node {
     &.highlighted {
       circle {
-        stroke: #4da1ff;
-        fill: #fff;
-        stroke-width: 5px;
+        fill: #4da1ff;
+      }
+
+      &.selected {
+        circle {
+          fill: #fff;
+        }
       }
     }
   }

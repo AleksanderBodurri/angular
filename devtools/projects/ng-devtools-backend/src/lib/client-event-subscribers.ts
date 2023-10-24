@@ -42,6 +42,21 @@ export const subscribeToClientEvents = (messageBus: MessageBus<Events>): void =>
   messageBus.on('disableTimingAPI', disableTimingAPI);
 
   messageBus.on('getInjectorProviders', getInjectorProvidersCallback(messageBus));
+  
+  messageBus.on('logProvider', (injector, provider) => {
+    if (!idToInjector.has(injector.id)) {
+      return;
+    }
+
+    const providerRecords = getInjectorProviders(idToInjector.get(injector.id)!);
+    if (providerRecords[provider.index!]) {
+      console.group(injector.name);
+      console.log('Injector: ', idToInjector.get(injector.id));
+      console.log('Provider: ', providerRecords[provider.index!]);
+      console.log('Injector.get(Provider): ', idToInjector.get(injector.id)?.get(providerRecords[provider.index!].token, null, { optional: true }));
+      console.groupEnd();
+    }
+  });
 
   if (appIsAngularInDevMode() && appIsSupportedAngularVersion() && appIsAngularIvy()) {
     setupInspector(messageBus);
@@ -276,15 +291,9 @@ const getInjectorProvidersCallback = (messageBus: MessageBus<Events>) =>
       const providerRecords = getInjectorProviders(idToInjector.get(injector.id)!);
       let serializedProviderRecords: SerializedProviderRecord[] = [];
 
-      if (injector.type === 'environment') {
-        serializedProviderRecords = providerRecords.map((providerRecord) => {
-          return serializeProviderRecord(providerRecord, true);
-        });
-      } else {
-        serializedProviderRecords = providerRecords.map((providerRecord) => {
-          return serializeProviderRecord(providerRecord);
-        });
-      }
+      serializedProviderRecords = providerRecords.map((providerRecord, index) => {
+        return serializeProviderRecord(providerRecord, index, injector.type === 'environment');
+      });
 
       messageBus.emit('latestInjectorProviders', [injector, serializedProviderRecords]);
     };

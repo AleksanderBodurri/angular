@@ -53,5 +53,5 @@ import {DialogComponent} from './dialog.component';
   exports: [AppTodoComponent],
   bootstrap: [AppTodoComponent],
 })
-export class AppModule {
+export class TodoModule {
 }

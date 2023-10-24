@@ -6,12 +6,16 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Input} from '@angular/core';
+import {Component, Injectable, Input} from '@angular/core';
+
+@Injectable()
+export class ZippyService {}
 
 @Component({
   selector: 'app-zippy',
   templateUrl: './zippy.component.html',
   styleUrls: ['./zippy.component.scss'],
+  providers: [ZippyService]
 })
 export class ZippyComponent {
   @Input() title: string;

@@ -218,10 +218,6 @@ export const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
 };
 
 export function getInjectorProviders(injector: Injector): ProviderRecord[] {
-  if (isPlatformInjector(injector)) {
-    return [];
-  }
-
   if (isNullInjector(injector)) {
     return [];
   }
@@ -278,20 +274,19 @@ const getDependenciesForDirective =
             token: dependency.token!.toString(),
             value: valueToLabel(dependency.value),
             flags: dependency.flags,
-            position: [position],
+            position: [position++],
             resolutionPath: dependencyResolutionPath
           });
+          continue
         }
 
         serializedInjectedServices.push({
           token: valueToLabel(dependency.token),
           value: valueToLabel(dependency.value),
           flags: dependency.flags,
-          position: [position],
+          position: [position++],
           resolutionPath: dependencyResolutionPath
         });
-
-        position++;
       }
 
       return serializedInjectedServices;
@@ -303,15 +298,23 @@ export const valueToLabel = (value: any): string => {
   }
 
   if (typeof value === 'object') {
-    return value.constructor.name;
+    return stripUnderscore(value.constructor.name);
   }
 
   if (typeof value === 'function') {
-    return value.name;
+    return stripUnderscore(value.name);
   }
 
-  return value;
+  return stripUnderscore(value);
 };
+
+function stripUnderscore(str: string): string {
+  if (str.startsWith('_')) {
+    return str.slice(1);
+  }
+
+  return str;
+}
 
 export function serializeInjector(injector: Injector): Omit<SerializedInjector, 'id'>|null {
   const metadata = getInjectorMetadata(injector);
@@ -321,19 +324,31 @@ export function serializeInjector(injector: Injector): Omit<SerializedInjector, 
     return null;
   }
 
+  if (metadata.type === 'null') {
+    return {type: 'null', name: 'Null Injector'};
+  }
+
+  const providers = getInjectorProviders(injector).length;
+
   if (metadata.type === 'element') {
     const source = metadata.source! as HTMLElement;
-    const name = elementToDirectiveNames(source)[0];
+    const name = stripUnderscore(elementToDirectiveNames(source)[0]);
 
-    return {type: 'element', name};
+    return {type: 'element', name, providers};
   }
 
   if (metadata.type === 'environment') {
-    return {type: 'environment', name: metadata.source as string};
-  }
+    if ((injector as any).scopes instanceof Set) {
+      if ((injector as any).scopes.has('platform')) {
+        return {type: 'environment', name: 'Platform', providers};
+      }
+      
+      if ((injector as any).scopes.has('root')) {
+        return {type: 'environment', name: 'Root', providers};
+      }
+    }
 
-  if (metadata.type === 'null') {
-    return {type: 'null', name: 'Null Injector'};
+    return {type: 'environment', name: stripUnderscore(metadata.source as string), providers};
   }
 
   console.error('Angular DevTools: Could not serialize injector.', injector);
@@ -341,7 +356,7 @@ export function serializeInjector(injector: Injector): Omit<SerializedInjector, 
 }
 
 export function serializeProviderRecord(
-    providerRecord: ProviderRecord, hasImportPath = false): SerializedProviderRecord {
+    providerRecord: ProviderRecord, index: number, hasImportPath = false): SerializedProviderRecord {
   let type: 'type'|'class'|'value'|'factory'|'existing' = 'type';
   let multi = false;
 
@@ -366,11 +381,12 @@ export function serializeProviderRecord(
     type,
     multi,
     isViewProvider: providerRecord.isViewProvider,
+    index
   };
 
   if (hasImportPath) {
     serializedProvider['importPath'] =
-        (providerRecord.importPath ?? []).map(injector => valueToLabel(injector as any));
+        (providerRecord.importPath ?? []).map(injector => valueToLabel(injector));
   }
 
   return serializedProvider;
@@ -391,11 +407,6 @@ export function getElementInjectorElement(elementInjector: Injector): HTMLElemen
 
 export function isInjectionToken(token: Type<unknown>|InjectionToken<unknown>): boolean {
   return token.constructor.name === 'InjectionToken';
-}
-
-export function isPlatformInjector(injector: Injector) {
-  return isEnvironmentInjector(injector) && injector['scopes'] instanceof Set &&
-      injector['scopes'].has('platform');
 }
 
 export function isEnvironmentInjector(injector: Injector) {
