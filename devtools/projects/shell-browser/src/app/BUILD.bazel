@@ -15,7 +15,6 @@ ng_module(
     srcs = [
         "app.component.ts",
         "app.module.ts",
-        "inject.ts",
     ],
     angular_assets = [
         "app.component.html",
@@ -35,6 +34,8 @@ ng_module(
         "//packages/core",
         "//packages/platform-browser",
         "//packages/platform-browser/animations",
+        "@npm//@angular/material",
+        "@npm//rxjs",
     ],
 )
 
@@ -78,8 +79,10 @@ ts_library(
         "chrome-application-operations.ts",
     ],
     deps = [
+        ":chrome_application_environment",
         "//devtools/projects/ng-devtools",
         "//devtools/projects/protocol",
+        "//packages/core",
         "@npm//@types",
     ],
 )
@@ -126,7 +129,10 @@ ts_library(
     srcs = [
         "background.ts",
     ],
-    deps = ["//devtools/projects/shell-browser/src/app:detect_angular_for_extension_icon"],
+    deps = [
+        "//devtools/projects/protocol",
+        "//devtools/projects/shell-browser/src/app:detect_angular_for_extension_icon",
+    ],
 )
 
 ts_library(
@@ -162,6 +168,8 @@ ts_library(
         "detect-angular-for-extension-icon.ts",
     ],
     deps = [
+        ":same_page_message_bus",
+        "//devtools/projects/protocol",
         "//devtools/projects/shared-utils",
         "@npm//@types",
     ],

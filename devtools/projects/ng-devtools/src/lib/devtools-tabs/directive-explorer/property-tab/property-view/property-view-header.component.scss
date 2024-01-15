@@ -30,6 +30,10 @@ button {
   &:active {
     opacity: 1;
   }
+
+  &:disabled {
+    opacity: 0.25;
+  }
 }
 
 :host-context(.dark-theme) {

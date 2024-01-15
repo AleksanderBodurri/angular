@@ -9,14 +9,19 @@
 import {ChromeMessageBus} from './chrome-message-bus';
 import {SamePageMessageBus} from './same-page-message-bus';
 
+let backendInstalled = false;
+
 export const main = () => {
+  if ((window as any).__ANGULAR_DEVTOOLS_CONTENT_SCRIPT_INJECTED__) {
+    return;
+  }
+  (window as any).__ANGULAR_DEVTOOLS_CONTENT_SCRIPT_INJECTED__ = true;
+
   let backgroundDisconnected = false;
   let backendInitialized = false;
 
-  // console.log('Content script executing', (window as any));
-
   const port = chrome.runtime.connect({
-    name: 'content-script',
+    name: `${document.title || location.href}`,
   });
 
   const handleDisconnect = (): void => {
@@ -29,8 +34,47 @@ export const main = () => {
 
   port.onDisconnect.addListener(handleDisconnect);
 
-  const localMessageBus =
-      new SamePageMessageBus('angular-devtools-content-script', 'angular-devtools-backend');
+  const detectAngularMessageBus = new SamePageMessageBus(
+      `angular-devtools-content-script-${location.href}`,
+      `angular-devtools-detect-angular-${location.href}`)
+
+  detectAngularMessageBus.on('detectAngular', (detectionResult) => {
+    // only install backend once
+    if (backendInstalled) {
+      return;
+    }
+
+    if (detectionResult.isAngularDevTools !== true) {
+      return;
+    }
+
+    if (detectionResult.isAngular !== true) {
+      return;
+    }
+
+    if (detectionResult.isDebugMode !== true) {
+      return;
+    }
+
+    if (detectionResult.isSupportedAngularVersion !== true) {
+      return;
+    }
+
+    // Defensive check against non html page. Realistically this should never happen.
+    if (document.contentType !== 'text/html') {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('app/backend_bundle.js');
+    document.documentElement.appendChild(script);
+    document.documentElement.removeChild(script);
+    backendInstalled = true;
+  });
+
+  const localMessageBus = new SamePageMessageBus(
+      `angular-devtools-content-script-${location.href}`,
+      `angular-devtools-backend-${location.href}`);
   const chromeMessageBus = new ChromeMessageBus(port);
 
   const handshakeWithBackend = (): void => {
@@ -61,5 +105,4 @@ export const main = () => {
   }
 };
 
-// expose to use as callback for chrome.tabs.executeScript in background.ts
-(globalThis as any).main = main;
+main();

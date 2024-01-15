@@ -6,10 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectorRef, Component, NgZone, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, NgZone, OnInit} from '@angular/core';
+import {ApplicationEnvironment} from 'ng-devtools';
 import {Events, MessageBus, PriorityAwareMessageBus} from 'protocol';
 
-import {injectScripts} from './inject';
 import {ZoneAwareChromeMessageBus} from './zone-aware-chrome-message-bus';
 
 @Component({
@@ -23,6 +23,7 @@ import {ZoneAwareChromeMessageBus} from './zone-aware-chrome-message-bus';
         const port = chrome.runtime.connect({
           name: '' + chrome.devtools.inspectedWindow.tabId,
         });
+
         return new PriorityAwareMessageBus(new ZoneAwareChromeMessageBus(port, ngZone));
       },
       deps: [NgZone],
@@ -30,14 +31,16 @@ import {ZoneAwareChromeMessageBus} from './zone-aware-chrome-message-bus';
   ],
 })
 export class AppComponent implements OnInit {
-  constructor(private _cd: ChangeDetectorRef) {}
+  environment = inject(ApplicationEnvironment);
+  private _cd = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
+    this.environment.inspectedWindowTabId = chrome.devtools.inspectedWindow.tabId;
+
     chrome.devtools.network.onNavigated.addListener(() => {
       window.location.reload();
     });
 
-    injectScripts(['app/backend_bundle.js']);
     this._cd.detectChanges();
   }
 }

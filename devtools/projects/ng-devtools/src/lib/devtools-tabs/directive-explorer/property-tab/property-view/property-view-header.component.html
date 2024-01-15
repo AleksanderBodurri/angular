@@ -1,6 +1,12 @@
 <mat-toolbar>
-    {{ directive }}
+  {{ directive }}
+  @if (environment.isConnectedToTopLevelFrame) {
     <button matTooltip="Open source" (click)="handleViewSource($event)">
-        <mat-icon> code </mat-icon>
+      <mat-icon> code </mat-icon>
     </button>
+  } @else {
+    <button disabled matTooltip="Inspect source is available only when inspecting a top level frame.">
+      <mat-icon> code </mat-icon>
+    </button>
+  }
 </mat-toolbar>

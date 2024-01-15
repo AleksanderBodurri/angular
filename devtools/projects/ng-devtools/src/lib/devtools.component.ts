@@ -9,10 +9,11 @@
 import {animate, style, transition, trigger} from '@angular/animations';
 import {Platform} from '@angular/cdk/platform';
 import {DOCUMENT} from '@angular/common';
-import {Component, Inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, Inject, inject, OnDestroy, OnInit} from '@angular/core';
 import {Events, MessageBus} from 'protocol';
 import {interval} from 'rxjs';
 
+import {ApplicationEnvironment} from './application-environment';
 import {ThemeService} from './theme-service';
 
 @Component({
@@ -37,6 +38,8 @@ export class DevToolsComponent implements OnInit, OnDestroy {
   private readonly _firefoxStyleName = 'firefox_styles.css';
   private readonly _chromeStyleName = 'chrome_styles.css';
 
+  environment = inject(ApplicationEnvironment);
+
   constructor(
       private _messageBus: MessageBus<Events>, private _themeService: ThemeService,
       private _platform: Platform, @Inject(DOCUMENT) private _document: Document) {}
@@ -48,16 +51,69 @@ export class DevToolsComponent implements OnInit, OnDestroy {
     this._messageBus.emit('queryNgAvailability');
   });
 
+  toggleFrame(frameId: string) {
+    if (!this.environment.multipleFramesEnabled) {
+      return;
+    }
+
+    if (this.environment.inspectedWindowTabId === null) {
+      return;
+    }
+
+    this._messageBus.emit(
+        'enableFrameConnection', [frameId, this.environment.inspectedWindowTabId]);
+
+    this.environment.selectedFrameId = null;
+
+    setTimeout(() => {
+      this.environment.selectedFrameId = frameId;
+    })
+  }
+
   ngOnInit(): void {
     this._themeService.initializeThemeWatcher();
 
-    this._messageBus.once('ngAvailability', ({version, devMode, ivy}) => {
-      this.angularExists = !!version;
-      this.angularVersion = version;
-      this.angularIsInDevMode = devMode;
-      this.ivy = ivy;
-      this._interval$.unsubscribe();
+    this._messageBus.on('contentScriptConnected', (frameId: string, name: string) => {
+      if (this.environment.frames.find(f => f.frameId === frameId)) {
+        return;
+      }
+
+      this.environment.frames.push({name, frameId});
+
+      if (this.environment.frames.length === 1) {
+        this.toggleFrame(frameId);
+      }
     });
+
+    this._messageBus
+        .on('contentScriptDisconnected',
+            (frameId: string, name: string) => {
+              const frameIndex = this.environment.frames.findIndex(f => f.frameId === frameId);
+
+              if (frameId === this.environment.selectedFrameId) {
+                this.environment.selectedFrameId = this.environment.frames[0].frameId;
+                this.toggleFrame(this.environment.selectedFrameId!);
+                return;
+              }
+
+              if (frameIndex === -1) {
+                return;
+              }
+
+              this.environment.frames.splice(frameIndex, 1);
+
+              if (this.environment.frames.length === 0) {
+                this.environment.selectedFrameId = null;
+              }
+            })
+
+            this._messageBus.once('ngAvailability', ({version, devMode, ivy}) => {
+              this.angularExists = !!version;
+              this.angularVersion = version;
+              this.angularIsInDevMode = devMode;
+              this.ivy = ivy;
+              this._interval$.unsubscribe();
+            });
 
     const browserStyleName =
         this._platform.FIREFOX ? this._firefoxStyleName : this._chromeStyleName;

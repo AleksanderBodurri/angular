@@ -10,6 +10,13 @@
       <mat-icon> info </mat-icon>
     </button>
   </div>
+
+  <select class="frame-selector" (change)="toggleFrame.emit($event.target.value)">
+    @for (frame of environment.frames; track $index) {
+      <option [value]="frame.frameId" [selected]="environment.selectedFrameId === frame.frameId"> {{ frame.name }} ({{ frame.frameId }}) </option>
+    }
+  </select>
+
   @for (tab of tabs; track $index) {
     <a class="mat-tab-link" mat-tab-link (click)="changeTab(tab)" [active]="activeTab === tab">
       {{ tab }}
@@ -27,18 +34,22 @@
     </section>
   }
 </nav>
+
 <mat-tab-nav-panel #tabPanel>
-<div class="tab-content">
-  <ng-directive-explorer
-    [showCommentNodes]="showCommentNodes"
-    [class.hidden]="activeTab !== 'Components'"
-    (toggleInspector)="toggleInspector()"
-  />
-  <ng-profiler [class.hidden]="activeTab !== 'Profiler'"/>
-  <ng-router-tree [routes]="routes" [class.hidden]="activeTab !== 'Router Tree'"/>
-  <ng-injector-tree [class.hidden]="activeTab !== 'Injector Tree'"/>
-</div>
+  @if (!environment.multipleFramesEnabled || environment.selectedFrameId !== null) {
+    <div class="tab-content">
+      <ng-directive-explorer
+        [showCommentNodes]="showCommentNodes"
+        [class.hidden]="activeTab !== 'Components'"
+        (toggleInspector)="toggleInspector()"
+      />
+      <ng-profiler [class.hidden]="activeTab !== 'Profiler'"/>
+      <ng-router-tree [routes]="routes" [class.hidden]="activeTab !== 'Router Tree'"/>
+      <ng-injector-tree [class.hidden]="activeTab !== 'Injector Tree'"/>
+    </div>
+  }
 </mat-tab-nav-panel>
+
 <mat-menu #menu="matMenu">
   <div mat-menu-item disableRipple (click)="$event.stopPropagation(); toggleTimingAPI()">
     <mat-slide-toggle [checked]="timingAPIEnabled">
@@ -56,6 +67,7 @@
     </mat-slide-toggle>
   </div>
 </mat-menu>
+
 <mat-menu #info="matMenu">
   <a mat-menu-item href="https://angular.io/devtools" target="_blank">
     <mat-icon>library_books</mat-icon>

@@ -7,6 +7,7 @@
  */
 
 import {NgModule} from '@angular/core';
+import {MatSelectModule} from '@angular/material/select';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {ApplicationEnvironment, ApplicationOperations, DevToolsModule} from 'ng-devtools';
 
@@ -16,7 +17,7 @@ import {ChromeApplicationOperations} from './chrome-application-operations';
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserAnimationsModule, DevToolsModule],
+  imports: [BrowserAnimationsModule, DevToolsModule, MatSelectModule],
   bootstrap: [AppComponent],
   providers: [
     {

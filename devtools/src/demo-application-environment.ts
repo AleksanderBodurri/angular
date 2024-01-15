@@ -11,7 +11,16 @@ import {ApplicationEnvironment, Environment} from 'ng-devtools';
 import {environment} from './environments/environment';
 
 export class DemoApplicationEnvironment extends ApplicationEnvironment {
+  multipleFramesEnabled: false = false;
+  frames = [];
+  selectedFrameId: null = null;
+  inspectedWindowTabId: null = null;
+
   override get environment(): Environment {
     return environment;
+  }
+
+  get isConnectedToTopLevelFrame(): boolean {
+    return true;
   }
 }

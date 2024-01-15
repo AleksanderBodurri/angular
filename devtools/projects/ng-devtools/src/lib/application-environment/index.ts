@@ -15,6 +15,16 @@ export interface Environment {
   LATEST_SHA: string;
 }
 
+export interface Frame {
+  name: string;
+  frameId: string;
+}
+
 export abstract class ApplicationEnvironment {
   abstract get environment(): Environment;
+  abstract get isConnectedToTopLevelFrame(): boolean;
+  abstract frames: Frame[];
+  abstract selectedFrameId: string|null;
+  abstract multipleFramesEnabled: boolean;
+  abstract inspectedWindowTabId: number|null;
 }

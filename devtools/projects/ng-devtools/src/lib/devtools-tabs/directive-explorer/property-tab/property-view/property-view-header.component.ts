@@ -6,7 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
+
+import {ApplicationEnvironment} from '../../../../application-environment';
 
 @Component({
   selector: 'ng-property-view-header',
@@ -16,6 +18,8 @@ import {Component, EventEmitter, Input, Output} from '@angular/core';
 export class PropertyViewHeaderComponent {
   @Input({required: true}) directive!: string;
   @Output() viewSource = new EventEmitter<void>();
+
+  environment = inject(ApplicationEnvironment);
 
   // output that emits directive
   handleViewSource(event: MouseEvent): void {

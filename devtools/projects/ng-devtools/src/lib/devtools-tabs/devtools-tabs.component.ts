@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AfterViewInit, Component, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatTabNav} from '@angular/material/tabs';
 import {Events, MessageBus, Route} from 'protocol';
@@ -26,11 +26,12 @@ type Tabs = 'Components'|'Profiler'|'Router Tree'|'Injector Tree';
 })
 export class DevToolsTabsComponent implements OnInit, AfterViewInit {
   @Input() angularVersion: string|undefined = undefined;
+  @Output() toggleFrame = new EventEmitter<string>();
   @ViewChild(DirectiveExplorerComponent) directiveExplorer!: DirectiveExplorerComponent;
   @ViewChild('navBar', {static: true}) navbar!: MatTabNav;
 
+  environment = inject(ApplicationEnvironment);
   activeTab: Tabs = 'Components';
-
   inspectorRunning = false;
   routerTreeEnabled = false;
   showCommentNodes = false;
@@ -39,6 +40,7 @@ export class DevToolsTabsComponent implements OnInit, AfterViewInit {
   currentTheme!: Theme;
 
   routes: Route[] = [];
+
 
   constructor(
       public tabUpdate: TabUpdate,

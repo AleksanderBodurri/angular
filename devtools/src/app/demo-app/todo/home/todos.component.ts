@@ -6,7 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ChangeDetectorRef, Component, EventEmitter, OnDestroy, OnInit, Output} from '@angular/core';
+import {ChangeDetectorRef, Component, EventEmitter, inject, OnDestroy, OnInit, Output} from '@angular/core';
+import {DomSanitizer} from '@angular/platform-browser';
 
 import {Todo} from './todo';
 import {TodoFilter} from './todos.pipe';
@@ -39,6 +40,8 @@ export class TodosComponent implements OnInit, OnDestroy {
   @Output() update = new EventEmitter();
   @Output() delete = new EventEmitter();
   @Output() add = new EventEmitter();
+
+  iframeUrl = inject(DomSanitizer).bypassSecurityTrustResourceUrl(`/demo-app/todos/about`);
 
   private hashListener!: EventListenerOrEventListenerObject;
 

@@ -163,8 +163,8 @@ const getRoutes = (messageBus: MessageBus<Events>) => {
 const checkForAngular = (messageBus: MessageBus<Events>): void => {
   const ngVersion = getAngularVersion();
   const appIsIvy = appIsAngularIvy();
+
   if (!ngVersion) {
-    setTimeout(() => checkForAngular(messageBus), 500);
     return;
   }
 

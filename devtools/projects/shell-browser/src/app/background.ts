@@ -8,7 +8,7 @@
 
 /// <reference types="chrome"/>
 
-import {AngularDetection} from './detect-angular-for-extension-icon';
+import {AngularDetection, Events, Topic} from 'protocol';
 
 const isManifestV3 = chrome.runtime.getManifest().manifest_version === 3;
 
@@ -36,71 +36,27 @@ browserAction.setIcon(
     },
     () => {});
 
-const ports: {
-  [tab: string]:
-      |{
-        'content-script': chrome.runtime.Port|null;
-        devtools: chrome.runtime.Port|null;
-      }|undefined;
-} = {};
+interface ContentScriptConnection {
+  port: chrome.runtime.Port|null;
+  enabled: boolean;
+  frameId: string;
+  pipeSetup: boolean;
+  backendReady?: boolean;
+}
 
-chrome.runtime.onConnect.addListener((port) => {
-  let tab: string|null = null;
-  let name: 'devtools'|'content-script'|null = null;
-  // tslint:disable-next-line:no-console
-  console.log('Connection event in the background script');
+interface DevToolsConnection {
+  'content-script': chrome.runtime.Port|null;
+  devtools: chrome.runtime.Port|null;
+  contentScripts: {[name: string]: ContentScriptConnection};
+}
 
-  if (isNumeric(port.name)) {
-    tab = port.name;
+const ports: {[tab: string]: DevToolsConnection|undefined} = {};
 
-    // tslint:disable-next-line:no-console
-    console.log('Angular devtools connected, injecting the content script', port.name, ports[tab]);
-
-    name = 'devtools';
-    installContentScript(parseInt(port.name, 10));
-  } else {
-    if (!port.sender || !port.sender.tab) {
-      // tslint:disable-next-line:no-console
-      console.error('Unable to access the port sender and sender tab');
-
-      return;
-    }
-    if (port.sender.tab.id === undefined) {
-      // tslint:disable-next-line:no-console
-      console.error('Sender tab id is undefined');
-
-      return;
-    }
-
-    // tslint:disable-next-line:no-console
-    console.log('Content script connected', port.sender.tab.id);
-    tab = port.sender.tab.id.toString();
-    name = 'content-script';
-  }
-
-  let portsTab = ports[tab];
-  if (!portsTab) {
-    // tslint:disable-next-line:no-console
-    console.log('Creating a tab port');
-
-    portsTab = ports[tab] = {
-      devtools: null,
-      'content-script': null,
-    };
-  }
-
-  portsTab[name] = port;
-
-  if (portsTab.devtools && portsTab['content-script']) {
-    doublePipe(portsTab.devtools, portsTab['content-script'], tab);
-  }
-});
-
-const isNumeric = (str: string): boolean => {
+function isNumeric(str: string): boolean {
   return +str + '' === str;
 };
 
-const installContentScript = (tabId: number) => {
+function installContentScript(tabId: number) {
   // tslint:disable-next-line:no-console
   console.log('Installing the content-script');
 
@@ -109,57 +65,97 @@ const installContentScript = (tabId: number) => {
 
   if (isManifestV3) {
     chrome.scripting.executeScript(
-        {files: ['app/content_script_bundle.js'], target: {tabId}}, () => {
-          chrome.scripting.executeScript({func: () => (globalThis as any).main(), target: {tabId}});
+        {files: ['app/content_script_bundle.js'], target: {tabId, allFrames: true}}, () => {
+          chrome.scripting.executeScript(
+              {func: () => (globalThis as any).main(), target: {tabId, allFrames: true}});
         });
 
     return;
   }
 
   // manifest V2 APIs
-  chrome.tabs.executeScript(tabId, {file: 'app/content_script_bundle.js'}, (result) => {
-    chrome.tabs.executeScript(tabId, {
-      code: 'globalThis.main()',
-    });
-  });
+  chrome.tabs.executeScript(
+      tabId, {file: 'app/content_script_bundle.js', allFrames: true}, (result) => {
+        chrome.tabs.executeScript(tabId, {code: 'globalThis.main()', allFrames: true});
+      });
 };
 
-const doublePipe =
-    (devtoolsPort: chrome.runtime.Port|null, contentScriptPort: chrome.runtime.Port,
-     tab: string) => {
-      if (devtoolsPort === null) {
-        console.warn('DevTools port is equal to null');
+function doublePipe(
+    devtoolsPort: chrome.runtime.Port|null,
+    contentScriptConnection: ContentScriptConnection,
+) {
+  if (contentScriptConnection.pipeSetup === true) {
+    return;
+  }
+
+  if (devtoolsPort === null) {
+    throw 'DevTools port is equal to null';
+  }
+
+  const contentScriptPort = contentScriptConnection.port;
+
+  if (contentScriptPort === null) {
+    throw 'Content script port is equal to null';
+  }
+
+  // tslint:disable-next-line:no-console
+  console.log('Creating two-way communication channel', Date.now(), ports);
+
+  const onDevToolsMessage = (message: {topic: Topic, args: any[]}) => {
+    if (message.topic === 'enableFrameConnection' && message.args[0] !== undefined &&
+        message.args[0] === contentScriptConnection.frameId) {
+      const tabId = message.args[1];
+      const tab = ports[tabId];
+      if (tab?.contentScripts === undefined) {
         return;
       }
 
-      // tslint:disable-next-line:no-console
-      console.log('Creating two-way communication channel', Date.now(), ports);
+      Object.keys(tab.contentScripts).forEach((key) => {
+        tab.contentScripts[key].enabled = false;
+      });
 
-      const onDevToolsMessage = (message: chrome.runtime.Port) => {
-        contentScriptPort.postMessage(message);
-      };
-      devtoolsPort.onMessage.addListener(onDevToolsMessage);
+      contentScriptConnection.enabled = true;
+    }
 
-      const onContentScriptMessage = (message: chrome.runtime.Port) => {
-        devtoolsPort.postMessage(message);
-      };
-      contentScriptPort.onMessage.addListener(onContentScriptMessage);
+    if (!contentScriptConnection.enabled) {
+      return;
+    }
 
-      const shutdown = (source: string) => {
-        // tslint:disable-next-line:no-console
-        console.log('Disconnecting', source);
+    contentScriptPort.postMessage(message);
+  };
+  devtoolsPort.onMessage.addListener(onDevToolsMessage);
 
-        devtoolsPort.onMessage.removeListener(onDevToolsMessage);
-        contentScriptPort.onMessage.removeListener(onContentScriptMessage);
-        devtoolsPort.disconnect();
-        contentScriptPort.disconnect();
-        ports[tab] = undefined;
-      };
-      devtoolsPort.onDisconnect.addListener(shutdown.bind(null, 'devtools'));
-      contentScriptPort.onDisconnect.addListener(shutdown.bind(null, 'content-script'));
-    };
+  const onContentScriptMessage = (message: {topic: Topic}) => {
+    if (message.topic === 'backendReady') {
+      devtoolsPort.postMessage({
+        topic: 'contentScriptRegistered',
+        args: [contentScriptConnection.frameId, contentScriptConnection.port!.name]
+      });
+    }
 
-const getPopUpName = (ng: AngularDetection) => {
+    if (!contentScriptConnection.enabled) {
+      return;
+    }
+
+    devtoolsPort.postMessage(message);
+  };
+  contentScriptPort.onMessage.addListener(onContentScriptMessage);
+
+  const shutdownContentScript = () => {
+    devtoolsPort.onMessage.removeListener(onDevToolsMessage);
+    devtoolsPort.postMessage({
+      topic: 'contentScriptDisconnected',
+      args: [contentScriptConnection.frameId, contentScriptConnection.port!.name]
+    });
+
+    contentScriptPort.onMessage.removeListener(onContentScriptMessage);
+    contentScriptPort.disconnect();
+  } contentScriptPort.onDisconnect.addListener(() => shutdownContentScript());
+
+  contentScriptConnection.pipeSetup = true;
+};
+
+function getPopUpName(ng: AngularDetection) {
   if (!ng.isAngular) {
     return 'not-angular.html';
   }
@@ -172,16 +168,109 @@ const getPopUpName = (ng: AngularDetection) => {
   return 'supported.html';
 };
 
+chrome.runtime.onConnect.addListener((port) => {
+  if (isNumeric(port.name)) {
+    installContentScript(parseInt(port.name, 10));
+    registerPortTab(port, 'devtools', port.name);
+    return;
+  }
+
+  if (!port.sender || !port.sender.tab || port.sender.tab.id === undefined ||
+      port.sender.frameId === undefined) {
+    return;
+  }
+
+  const frameId = port.sender.frameId.toString();
+  registerPortTab(port, frameId, port.sender.tab.id.toString());
+});
+
+function registerPortTab(port: chrome.runtime.Port, frameId: string, tabId: string) {
+  ports[tabId] = ports[tabId] ?? {
+    devtools: null,
+    'content-script': null,
+    contentScripts: {[frameId]: {port: null, enabled: false, frameId: '-1', pipeSetup: false}}
+  };
+
+  const tab = ports[tabId]!;
+
+  if (frameId === 'devtools') {
+    tab.devtools = port;
+    tab.devtools.onDisconnect.addListener(() => {
+      if (!tab.devtools) {
+        return;
+      }
+
+      Object.entries(tab.contentScripts).forEach(([frameId, connection]) => {
+        connection.pipeSetup = false;
+      });
+
+      tab.devtools.disconnect();
+      tab.devtools = null;
+    });
+  } else {
+    tab.contentScripts[frameId] = tab.contentScripts[frameId] ?? {port: null, enabled: false};
+    tab.contentScripts[frameId].port = port;
+    tab.contentScripts[frameId].frameId = frameId;
+    tab.contentScripts[frameId].enabled = tab.contentScripts[frameId].enabled ?? false;
+    port.onDisconnect.addListener(() => {
+      const port = tab.contentScripts[frameId].port;
+      if (!port) {
+        return;
+      }
+      port.disconnect();
+      delete tab.contentScripts[frameId];
+
+      if (Object.keys(tab.contentScripts).length === 0) {
+        delete ports[tabId];
+      }
+    });
+  }
+
+  if (tab.devtools) {
+    Object.entries(tab.contentScripts).forEach(([frameId, connection]) => {
+      if (tab.devtools === null || connection.port === null) {
+        return;
+      }
+
+      if (connection.backendReady !== true) {
+        return;
+      }
+
+      tab.devtools!.postMessage(
+          {topic: 'contentScriptRegistered', args: [frameId, connection.port.name]});
+      doublePipe(tab.devtools, connection);
+    });
+  }
+
+  if (tab.contentScripts[frameId] && frameId !== 'devtools') {
+    tab.contentScripts[frameId].port!.onMessage.addListener((message) => {
+      if (message.topic === 'backendReady') {
+        tab.contentScripts[frameId].backendReady = true;
+      }
+    });
+  }
+
+  if (tab.devtools && tab.contentScripts[frameId]) {
+    console.log(`Connecting ports for tab ${tabId}`);
+    console.log('Ports: ', tab.devtools, tab.contentScripts[frameId]);
+    console.log(`Name: ${frameId}`);
+
+    doublePipe(tab.devtools, tab.contentScripts[frameId]);
+  }
+}
+
 chrome.runtime.onMessage.addListener((req: AngularDetection, sender) => {
   if (!req.isAngularDevTools) {
     return;
   }
+
   if (sender && sender.tab) {
     browserAction.setPopup({
       tabId: sender.tab.id,
       popup: `popups/${getPopUpName(req)}`,
     });
   }
+
   if (sender && sender.tab && req.isAngular) {
     browserAction.setIcon(
         {

@@ -27,6 +27,7 @@
     {
       "resources": [
         "app/backend_bundle.js",
+        "app/content_script_bundle.js",
         "app/detect_angular_for_extension_icon_bundle.js",
         "devtools.html"
       ],
@@ -52,7 +53,18 @@
       "js": [
         "app/ng_validate_bundle.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "app/content_script_bundle.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ]
 }
