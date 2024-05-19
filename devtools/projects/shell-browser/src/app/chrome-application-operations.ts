@@ -31,7 +31,7 @@ export class ChromeApplicationOperations extends ApplicationOperations {
       directivePosition,
       objectPath,
     };
-    const inspect = `inspect(inspectedApplication.findPropertyByPosition('${JSON.stringify(
+    const inspect = `inspectedApplication.inspectProperty(inspectedApplication.findPropertyByPosition('${JSON.stringify(
       args,
     )}'))`;
     runInInspectedWindow(inspect, target);

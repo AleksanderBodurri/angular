@@ -59,6 +59,18 @@ export function ngDebugApiIsSupported(api: string): boolean {
   return typeof ng[api] === 'function';
 }
 
+export function getSignalMetadata(prop: unknown): any {
+  if (!isSignal(prop)) {
+    return null;
+  }
+  if (!ngDebugApiIsSupported('getSignalMetadata')) {
+    return null;
+  }
+
+  const ng = ngDebug();
+  return ng.getSignalMetadata(prop);
+}
+
 export function isSignal(prop: unknown): prop is () => unknown {
   if (!ngDebugApiIsSupported('isSignal')) {
     return false;

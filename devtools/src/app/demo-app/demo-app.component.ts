@@ -36,6 +36,13 @@ export class DemoAppComponent {
   @Output() outputOne = new EventEmitter();
   @Output('output_two') outputTwo = new EventEmitter();
 
+  helloWorldSignal = signal('Hello');
+
+  computedObject2 = computed(() => {
+    const innerSignal = signal(100);
+    return innerSignal;
+  });
+
   primitiveSignal = signal(123);
   primitiveComputed = computed(() => this.primitiveSignal() ** 2);
   objectSignal = signal({name: 'John', age: 40});

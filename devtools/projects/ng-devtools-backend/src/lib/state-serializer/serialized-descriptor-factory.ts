@@ -8,7 +8,7 @@
 
 import {ContainerType, Descriptor, NestedProp, PropType} from 'protocol';
 
-import {isSignal, unwrapSignal} from '../utils';
+import {isSignal, unwrapSignal, getSignalMetadata} from '../utils';
 
 import {getDescriptor, getKeys} from './object-utils';
 
@@ -199,6 +199,7 @@ export function createShallowSerializedDescriptor(
     editable: isEditable(descriptor, propName, propData, getterOrSetter) && !isReadonly,
     preview: getPreview(propData, getterOrSetter),
     containerType,
+    signalPath: getSignalPath(propData),
   };
 
   if (propData.prop !== undefined && serializable.has(type)) {
@@ -232,6 +233,7 @@ export function createLevelSerializedDescriptor(
     expandable: !getterOrSetter && getKeys(prop).length > 0,
     preview: getPreview(propData, getterOrSetter),
     containerType,
+    signalPath: getSignalPath(propData),
   };
 
   if (levelOptions.level !== undefined && levelOptions.currentLevel < levelOptions.level) {
@@ -263,6 +265,7 @@ export function createNestedSerializedDescriptor(
     expandable: !getterOrSetter && getKeys(prop).length > 0,
     preview: getPreview(propData, getterOrSetter),
     containerType,
+    signalPath: getSignalPath(propData),
   };
 
   if (nodes?.length) {
@@ -272,6 +275,27 @@ export function createNestedSerializedDescriptor(
     }
   }
   return nestedSerializedDescriptor;
+}
+
+function getSignalPath(propData: any): any {
+  const metadata = getSignalMetadata(propData.prop);
+  const stack = metadata?.stack;
+
+  if (!stack) {
+    return null;
+  }
+
+  // @ts-ignore
+  const signalPath = stack
+    .split('\n')
+    .map((s) => s.trim())
+    .slice(1)
+    .map((s) => 'http' + s.split('http')[1])
+    .map((s) => (s.at(-1) === ')' ? s.slice(0, s.length - 1) : s))[1];
+
+  console.log(signalPath);
+
+  return signalPath || null;
 }
 
 function getNestedDescriptorValue(

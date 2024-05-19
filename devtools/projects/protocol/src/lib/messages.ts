@@ -92,6 +92,7 @@ export interface Descriptor {
   type: PropType;
   preview: string;
   containerType: ContainerType;
+  signalPath: string | null;
 }
 
 export interface DirectivesProperties {

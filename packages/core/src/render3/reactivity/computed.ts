@@ -33,6 +33,9 @@ export function computed<T>(computation: () => T, options?: CreateComputedOption
   }
   if (ngDevMode) {
     getter.toString = () => `[Computed: ${getter()}]`;
+    const stack = new Error().stack;
+    (getter[SIGNAL] as any).stack = stack;
   }
+
   return getter;
 }

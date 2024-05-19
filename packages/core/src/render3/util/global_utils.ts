@@ -22,6 +22,7 @@ import {
   getListeners,
   getOwningComponent,
   getRootComponents,
+  getSignalMetadata,
 } from './discovery_utils';
 import {
   getDependenciesFromInjectable,
@@ -70,6 +71,8 @@ const globalUtilsFunctions = {
   'getDirectives': getDirectives,
   'applyChanges': applyChanges,
   'isSignal': isSignal,
+
+  'getSignalMetadata': getSignalMetadata,
 };
 type GlobalUtilsFunctions = keyof typeof globalUtilsFunctions;
 

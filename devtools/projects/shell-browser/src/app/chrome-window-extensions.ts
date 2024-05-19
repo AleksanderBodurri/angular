@@ -14,6 +14,7 @@ import {
 } from '../../../ng-devtools-backend/src/lib/component-tree';
 
 import {ElementPosition} from 'protocol';
+import {isSignal, ngDebug} from '../../../../projects/ng-devtools-backend/src/lib/utils';
 
 export const initializeExtendedWindowOperations = () => {
   extendWindowOperations(globalThis, {inspectedApplication: chromeWindowExtensions});
@@ -84,6 +85,22 @@ const chromeWindowExtensions = {
     }
     if (node.component) {
       return traverseDirective(node.component.instance, objectPath);
+    }
+  },
+  inspectProperty: (property: unknown): any => {
+    if (isSignal(property)) {
+      const ng = ngDebug();
+      const metadata = ng.getSignalMetadata(property);
+      // @ts-ignore
+      const signalPath = metadata.stack
+        .split('\n')
+        .map((s) => s.trim())
+        .map((s) => s.split('(')[1])
+        .filter(Boolean)
+        .map((s) => s.split(')')[0])[1];
+      console.log(signalPath);
+    } else {
+      (window as any).inspect(property);
     }
   },
 };

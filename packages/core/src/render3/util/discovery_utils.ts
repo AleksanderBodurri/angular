@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {SIGNAL} from '@angular/core/primitives/signals';
 import {ChangeDetectionStrategy} from '../../change_detection/constants';
 import {Injector} from '../../di/injector';
 import {ViewEncapsulation} from '../../metadata/view';
@@ -22,6 +23,7 @@ import {NodeInjector} from '../di';
 import {DirectiveDef} from '../interfaces/definition';
 import {TElementNode, TNode, TNodeProviderIndexes} from '../interfaces/node';
 import {CLEANUP, CONTEXT, FLAGS, LView, LViewFlags, TVIEW, TViewType} from '../interfaces/view';
+import {Signal} from '../reactivity/api';
 
 import {getRootContext} from './view_traversal_utils';
 import {getLViewParent, unwrapRNode} from './view_utils';
@@ -512,4 +514,8 @@ function extractInputDebugMetadata<T>(inputs: DirectiveDef<T>['inputs']) {
   }
 
   return res;
+}
+
+export function getSignalMetadata(signal: Signal<unknown>): any {
+  return signal[SIGNAL];
 }

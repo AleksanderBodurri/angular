@@ -12,6 +12,10 @@
           (updateValue)="handleUpdate(node, $event)"
           />
       }
+
+      @if (node.prop.descriptor.containerType === 'WritableSignal' || node.prop.descriptor.containerType === 'ReadonlySignal') {
+        <mat-icon (click)="inspect.emit(node)" class="inspect-signal"> visibility </mat-icon>
+      }
     </mat-tree-node>
     <mat-tree-node matTreeNodePaddingIndent="14" *matTreeNodeDef="let node; when: hasChild" matTreeNodePadding>
       <div (click)="toggle(node)">

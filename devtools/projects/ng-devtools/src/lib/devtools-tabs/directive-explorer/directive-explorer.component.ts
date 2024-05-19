@@ -300,6 +300,20 @@ export class DirectiveExplorerComponent implements OnInit, OnDestroy {
     directivePosition: DirectivePosition;
   }): void {
     const objectPath = constructPathOfKeysToPropertyValue(node.prop);
+    debugger;
+
+    if (
+      node.prop.descriptor.containerType === 'WritableSignal' ||
+      node.prop.descriptor.containerType === 'ReadonlySignal'
+    ) {
+      if (node.prop.descriptor.signalPath) {
+        let [column, line, ...url] = node.prop.descriptor.signalPath.split(':').reverse();
+
+        (chrome.devtools.panels as any).openResource(
+          'http://localhost:4200/devtools/src/app/demo-app/demo-app.component.ts',
+        );
+      }
+    }
 
     const selectedFrame = this._frameManager.selectedFrame;
     if (!this._frameManager.frameHasUniqueUrl(selectedFrame)) {

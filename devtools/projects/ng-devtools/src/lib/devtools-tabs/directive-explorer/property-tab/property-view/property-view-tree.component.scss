@@ -20,6 +20,24 @@
         height: 16px;
         position: relative;
         top: 6px;
+
+        &.inspect-signal {
+          font-size: 18px;
+          width: 18px;
+          top: 0;
+          left: 8px;
+          cursor: pointer;
+
+          opacity: 0.5;
+
+          &:hover {
+            opacity: 0.75;
+          }
+        
+          &:active {
+            opacity: 1;
+          }
+        }
       }
     }
   }

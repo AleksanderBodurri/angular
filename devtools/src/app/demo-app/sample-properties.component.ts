@@ -6,18 +6,32 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, computed, ElementRef, inject, signal, ViewChild} from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Input,
+  Signal,
+  signal,
+  ViewChild,
+  WritableSignal,
+} from '@angular/core';
 import {SIGNAL} from '@angular/core/primitives/signals';
+
+const outerSignal = signal('outside of component');
 
 import {SampleService} from './sample.service';
 
 @Component({
   selector: 'app-sample-properties',
-  template: '',
+  template: '{{ computedObject().age }}',
   styles: [''],
 })
 export class SamplePropertiesComponent {
   @ViewChild('elementReference') elementRef!: ElementRef;
+
+  @Input() signalInput: WritableSignal<any> = signal(null);
 
   exampleService = inject(SampleService);
 
@@ -49,4 +63,6 @@ export class SamplePropertiesComponent {
   });
 
   signalSymbol = SIGNAL;
+
+  outsideSignal = outerSignal;
 }

@@ -83,6 +83,9 @@ export function signal<T>(initialValue: T, options?: CreateSignalOptions<T>): Wr
   signalFn.asReadonly = signalAsReadonlyFn.bind(signalFn as any) as () => Signal<T>;
   if (ngDevMode) {
     signalFn.toString = () => `[Signal: ${signalFn()}]`;
+
+    const stack = new Error().stack;
+    (signalFn[SIGNAL] as any).stack = stack;
   }
   return signalFn as WritableSignal<T>;
 }
