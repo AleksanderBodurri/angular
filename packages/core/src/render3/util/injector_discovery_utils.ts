@@ -22,7 +22,7 @@ import {deepForEach} from '../../util/array_utils';
 import {throwError} from '../../util/assert';
 import {assertTNode, assertTNodeForLView} from '../assert';
 import {ChainedInjector} from '../chained_injector';
-import {getFrameworkDIDebugData} from '../debug/framework_injector_profiler';
+import {getDIResolver, getFrameworkDIDebugData} from '../debug/framework_injector_profiler';
 import {InjectedService, ProviderRecord} from '../debug/injector_profiler';
 import {getComponentDef} from '../definition';
 import {
@@ -224,6 +224,18 @@ function getNodeInjectorProviders(injector: NodeInjector): ProviderRecord[] {
   const diResolver = getNodeInjectorTNode(injector);
   const {resolverToProviders} = getFrameworkDIDebugData();
   return resolverToProviders.get(diResolver as TNode) ?? [];
+}
+
+/**
+ * Gets the effects created within the context of a given injector.
+ * 
+ * @param injector 
+ * @returns an array of effects created within the context of the given injector
+ */
+export function getInjectorEffects(injector: Injector): any[] {
+  const {resolverToEffects} = getFrameworkDIDebugData();
+  const diResolver = getDIResolver(injector);
+  return resolverToEffects.get(diResolver as Injector | LView<unknown>) ?? [];
 }
 
 /**

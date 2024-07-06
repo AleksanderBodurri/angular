@@ -25,6 +25,7 @@ import {
 } from './discovery_utils';
 import {
   getDependenciesFromInjectable,
+  getInjectorEffects,
   getInjectorMetadata,
   getInjectorProviders,
   getInjectorResolutionPath,
@@ -47,6 +48,7 @@ import {
  * */
 export const GLOBAL_PUBLISH_EXPANDO_KEY = 'ng';
 
+
 const globalUtilsFunctions = {
   /**
    * Warning: functions that start with `ɵ` are considered *INTERNAL* and should not be relied upon
@@ -58,6 +60,7 @@ const globalUtilsFunctions = {
   'ɵgetInjectorResolutionPath': getInjectorResolutionPath,
   'ɵgetInjectorMetadata': getInjectorMetadata,
   'ɵsetProfiler': setProfiler,
+  'ɵgetInjectorEffects': getInjectorEffects,
 
   'getDirectiveMetadata': getDirectiveMetadata,
   'getComponent': getComponent,

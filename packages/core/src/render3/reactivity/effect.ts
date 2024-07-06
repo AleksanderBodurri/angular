@@ -22,6 +22,7 @@ import {FLAGS, LViewFlags, EFFECTS_TO_SCHEDULE} from '../interfaces/view';
 import {assertNotInReactiveContext} from './asserts';
 import {performanceMarkFeature} from '../../util/performance';
 import {PendingTasks} from '../../pending_tasks';
+import { emitEffectCreatedEvent, setInjectorProfilerContext } from '../debug/injector_profiler';
 
 /**
  * An effect can, optionally, register a cleanup function. If registered, the cleanup is executed
@@ -289,6 +290,15 @@ export function effect(
   } else {
     // Delay the initialization of the effect until the view is fully initialized.
     (cdr._lView[EFFECTS_TO_SCHEDULE] ??= []).push(handle.watcher.notify);
+  }
+  
+  if (ngDevMode) {
+    const prevInjectorProfilerContext = setInjectorProfilerContext({injector, token: null});
+    try {
+      emitEffectCreatedEvent(handle);
+    } finally {
+      setInjectorProfilerContext(prevInjectorProfilerContext)
+    }
   }
 
   return handle;
