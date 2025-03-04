@@ -7,6 +7,7 @@ ts_library(
     srcs = ["index.ts"],
     deps = [
         "//devtools/projects/protocol",
+         "//devtools/projects/ng-devtools/src/lib/application-environment",
         "@npm//@types",
     ],
 )
