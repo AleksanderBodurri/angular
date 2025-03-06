@@ -27,25 +27,32 @@
     </as-split>
   </as-split-area>
   <as-split-area size="40" minSize="25" class="prop-split">
-    <div class="property-tab-wrapper">
-      @if (currentSelectedElement(); as currentSelectedElement) {
-        <ng-property-tab
-          [currentSelectedElement]="currentSelectedElement"
-          (inspect)="inspect($event)"
-          (viewSource)="viewSource($event)"
-        />
-      } @else {
-        <p class="no-selected-element">No selected element</p>
-      }
-    </div>
-    @if (isHydrationEnabled) {
-      <div class="hydration">
-        <mat-slide-toggle
-          [(ngModel)]="showHydrationNodeHighlights"
-          (change)="showHydrationNodeHighlights() ? hightlightHydrationNodes() : removeHydrationNodesHightlights()"
-          >Show hydration overlays</mat-slide-toggle
-        >
-      </div>
+    @if (currentSelectedElement(); as currentSelectedElement) {
+      <as-split direction="vertical" [gutterSize]="9" unit="pixel">
+        <as-split-area>
+          <ng-signals-tab [currentElement]="currentSelectedElement.position" #signalsTab />
+        </as-split-area>
+        <as-split-area>
+          <div class="property-tab-wrapper">
+            <ng-property-tab
+              [currentSelectedElement]="currentSelectedElement"
+              (inspect)="inspect($event)"
+              (viewSource)="viewSource($event)"
+            />
+            @if (isHydrationEnabled) {
+              <div class="hydration">
+                <mat-slide-toggle
+                  [(ngModel)]="showHydrationNodeHighlights"
+                  (change)="showHydrationNodeHighlights() ? hightlightHydrationNodes() : removeHydrationNodesHightlights()"
+                  >Show hydration overlays</mat-slide-toggle
+                >
+              </div>
+            }
+          </div>
+        </as-split-area>
+      </as-split>
+    } @else {
+      <p class="no-selected-element">No selected element</p>
     }
   </as-split-area>
 </as-split>
