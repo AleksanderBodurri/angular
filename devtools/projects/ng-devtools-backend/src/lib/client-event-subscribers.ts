@@ -624,6 +624,7 @@ const getSignalGraphCallback = (messageBus: MessageBus<Events>) => (element: Ele
         id: node.id,
         kind: node.kind,
         label: node.label,
+        epoch: node.epoch,
         preview: serializeValue(node.value),
       };
     })
