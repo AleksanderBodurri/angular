@@ -79,4 +79,10 @@
     align-items: center;
     justify-content: center;
   }
+
+  .close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
 }

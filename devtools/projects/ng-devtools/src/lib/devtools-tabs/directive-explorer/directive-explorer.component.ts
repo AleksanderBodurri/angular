@@ -107,6 +107,8 @@ export class DirectiveExplorerComponent {
   readonly parents = signal<FlatNode[] | null>(null);
   readonly showHydrationNodeHighlights = signal(false);
 
+  readonly signalsOpen = signal(false);
+
   private _clickedElement: IndexedNode | null = null;
   private _refreshRetryTimeout: null | ReturnType<typeof setTimeout> = null;
 
@@ -342,5 +344,13 @@ export class DirectiveExplorerComponent {
       this.removeHydrationNodesHightlights();
       this.hightlightHydrationNodes();
     }
+  }
+
+  closeSignalsTab() {
+    this.signalsOpen.set(false);
+  }
+
+  toggleSignalGraph() {
+    this.signalsOpen.set(!this.signalsOpen())
   }
 }

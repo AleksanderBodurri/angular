@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -41,6 +42,8 @@ export class SignalsTabComponent {
 
   private _appOperations = inject(ApplicationOperations);
   private readonly _frameManager = inject(FrameManager);
+
+  readonly close = output<void>();
 
   protected selectedNode = computed(() => {
     const signalGraph = this.signalGraph();

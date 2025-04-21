@@ -6,19 +6,26 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {ChangeDetectionStrategy, Component, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 
 import {IndexedNode} from '../directive-forest/index-forest';
 import {ComponentMetadataComponent} from './component-metadata.component';
 import {MatExpansionModule} from '@angular/material/expansion';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
   templateUrl: './property-tab-header.component.html',
   selector: 'ng-property-tab-header',
   styleUrls: ['./property-tab-header.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatExpansionModule, ComponentMetadataComponent],
+  imports: [MatExpansionModule, ComponentMetadataComponent, MatIcon],
 })
 export class PropertyTabHeaderComponent {
   currentSelectedElement = input.required<IndexedNode>();
+  toggleSignalGraph = output<void>();
+
+  handleToggleSignalGraph(event: MouseEvent) {
+    event.stopPropagation();
+    this.toggleSignalGraph.emit();
+  }
 }
