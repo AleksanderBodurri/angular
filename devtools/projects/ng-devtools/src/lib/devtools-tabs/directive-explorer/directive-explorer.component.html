@@ -44,18 +44,18 @@
           (viewSource)="viewSource($event)"
           (toggleSignalGraph)="toggleSignalGraph()"
         />
-        @if (isHydrationEnabled) {
-          <div class="hydration">
-            <mat-slide-toggle
-              [(ngModel)]="showHydrationNodeHighlights"
-              (change)="showHydrationNodeHighlights() ? hightlightHydrationNodes() : removeHydrationNodesHightlights()"
-              >Show hydration overlays</mat-slide-toggle
-            >
-          </div>
-        }
       } @else {
         <p class="no-selected-element">No selected element</p>
       }
     </div>
+    @if (isHydrationEnabled) {
+      <div class="hydration">
+        <mat-slide-toggle
+          [(ngModel)]="showHydrationNodeHighlights"
+          (change)="showHydrationNodeHighlights() ? hightlightHydrationNodes() : removeHydrationNodesHightlights()"
+          >Show hydration overlays</mat-slide-toggle
+        >
+      </div>
+    }
   </as-split-area>
 </as-split>
