@@ -24,7 +24,7 @@
           }
         </div>
       </as-split-area>
-      @if (signalsOpen() && currentSelectedElement(); as currentSelectedElement) {
+      @if (signalsOpen() && signals() && currentSelectedElement(); as currentSelectedElement) {
         <as-split-area size="70">
           <ng-signals-tab
             [currentElement]="currentSelectedElement.position"
@@ -40,9 +40,9 @@
       @if (currentSelectedElement(); as currentSelectedElement) {
         <ng-property-tab
           [currentSelectedElement]="currentSelectedElement"
+          [toggleSignalGraph]="signals() ? toggleSignalGraph : undefined"
           (inspect)="inspect($event)"
           (viewSource)="viewSource($event)"
-          (toggleSignalGraph)="toggleSignalGraph()"
         />
       } @else {
         <p class="no-selected-element">No selected element</p>

@@ -22,10 +22,12 @@ import {MatIcon} from '@angular/material/icon';
 })
 export class PropertyTabHeaderComponent {
   currentSelectedElement = input.required<IndexedNode>();
-  toggleSignalGraph = output<void>();
+  toggleSignalGraph = input<() =>void>();
 
   handleToggleSignalGraph(event: MouseEvent) {
     event.stopPropagation();
-    this.toggleSignalGraph.emit();
+    // we don't show the button unless toggleSignalGraph is defined
+    const toggleSignalGraphFn = this.toggleSignalGraph()!;
+    toggleSignalGraphFn();
   }
 }

@@ -101,6 +101,8 @@ export class DirectiveExplorerComponent {
 
   readonly signalsTab = viewChild.required<SignalsTabComponent>('signalsTab');
 
+  readonly signals = input<boolean>();
+
   readonly currentSelectedElement = signal<IndexedNode | null>(null);
   readonly forest = signal<DevToolsNode[]>([]);
   readonly splitDirection = signal<'horizontal' | 'vertical'>('horizontal');
@@ -350,7 +352,7 @@ export class DirectiveExplorerComponent {
     this.signalsOpen.set(false);
   }
 
-  toggleSignalGraph() {
+  toggleSignalGraph = () => {
     this.signalsOpen.set(!this.signalsOpen())
   }
 }

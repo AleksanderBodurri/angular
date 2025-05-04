@@ -25,5 +25,5 @@ export class PropertyTabComponent {
   readonly currentSelectedElement = input.required<IndexedNode | null>();
   readonly viewSource = output<string>();
   readonly inspect = output<{node: FlatNode; directivePosition: DirectivePosition}>();
-  readonly toggleSignalGraph = output<void>();
+  readonly toggleSignalGraph = input<() => void>();
 }
