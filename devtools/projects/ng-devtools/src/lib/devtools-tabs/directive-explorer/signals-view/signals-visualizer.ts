@@ -129,16 +129,16 @@ export class SignalsGraphVisualizer {
           outer
             .append('div')
             .classed('header', true)
-            .text((x) => x.label ?? 'Unnamed');
+            .text((x) => x.label ?? x.kind);
           outer
             .append('div')
             .classed('body', true)
-            .text((x) => x.preview.preview);
+            .text((x) => getBodyText(x));
           return obj;
         },
         (obj) => {
-          obj.select('.header').text((x) => x.label ?? 'Unnamed');
-          obj.select('.body').text((x) => x.preview.preview);
+          obj.select('.header').text((x) => x.label ?? x.kind);
+          obj.select('.body').text((x) => getBodyText(x));
           return obj;
         },
       )
@@ -169,4 +169,20 @@ export class SignalsGraphVisualizer {
     this.simulation.force('center', d3.forceCenter(width / 2, height / 2));
     this.simulation.restart();
   }
+}
+
+function getBodyText(node: DebugSignalGraphNode): string {
+  if (node.kind === 'signal' || node.kind === 'computed') {
+    return node.preview.preview;
+  }
+
+  if (node.kind === 'template') {
+    return '</>';
+  }
+
+  if (node.kind === 'effect') {
+    return '() => {}';
+  }
+
+  return '';
 }

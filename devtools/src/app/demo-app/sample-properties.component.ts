@@ -1,11 +1,3 @@
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.dev/license
- */
-
 import {Component, computed, ElementRef, inject, signal, viewChild} from '@angular/core';
 import {SIGNAL} from '@angular/core/primitives/signals';
 
@@ -13,7 +5,7 @@ import {SampleService} from './sample.service';
 
 @Component({
   selector: 'app-sample-properties',
-  template: '',
+  template: '{{computedObject()}}',
   styles: [''],
 })
 export class SamplePropertiesComponent {

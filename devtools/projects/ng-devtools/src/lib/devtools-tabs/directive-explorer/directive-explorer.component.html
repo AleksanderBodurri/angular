@@ -40,7 +40,7 @@
       @if (currentSelectedElement(); as currentSelectedElement) {
         <ng-property-tab
           [currentSelectedElement]="currentSelectedElement"
-          [toggleSignalGraph]="signals() ? toggleSignalGraph : undefined"
+          (toggleSignalGraph)="signals() ? toggleSignalGraph() : undefined"
           (inspect)="inspect($event)"
           (viewSource)="viewSource($event)"
         />

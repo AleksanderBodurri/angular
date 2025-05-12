@@ -12,22 +12,21 @@ import {IndexedNode} from '../directive-forest/index-forest';
 import {ComponentMetadataComponent} from './component-metadata.component';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatIcon} from '@angular/material/icon';
+import {MatIconButton} from '@angular/material/button';
 
 @Component({
   templateUrl: './property-tab-header.component.html',
   selector: 'ng-property-tab-header',
   styleUrls: ['./property-tab-header.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatExpansionModule, ComponentMetadataComponent, MatIcon],
+  imports: [MatExpansionModule, ComponentMetadataComponent, MatIcon, MatIconButton],
 })
 export class PropertyTabHeaderComponent {
   currentSelectedElement = input.required<IndexedNode>();
-  toggleSignalGraph = input<() =>void>();
+  toggleSignalGraph = output<void>();
 
   handleToggleSignalGraph(event: MouseEvent) {
     event.stopPropagation();
-    // we don't show the button unless toggleSignalGraph is defined
-    const toggleSignalGraphFn = this.toggleSignalGraph()!;
-    toggleSignalGraphFn();
+    this.toggleSignalGraph.emit();
   }
 }

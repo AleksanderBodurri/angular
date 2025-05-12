@@ -13,6 +13,12 @@
   align-items: center;
   height: 32px; /* Same as mat-expansion-panel-header height */
 
+  .show-signal-graph {
+    // Material expansion panel has a default margin-right of 8px so we
+    // need to add a margin-right to the non-expansion panel header to match
+    margin-right: 8px;
+  }
+
   .component-name,
   .element-name {
     margin-left: 0.625rem;
