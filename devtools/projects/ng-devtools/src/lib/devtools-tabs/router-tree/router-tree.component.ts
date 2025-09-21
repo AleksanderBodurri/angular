@@ -159,15 +159,17 @@ export class RouterTreeComponent {
   private d3NodeModifier(d3Node: SvgD3Node<RouterTreeNode>) {
     d3Node.attr('class', (node: RouterTreeD3Node) => {
       // Since `node-faded` could pre-exist, drop it if the node is a match.
-      const classNames = d3Node.attr('class').replace('node-faded', '');
+      const classNames = d3Node
+        .attr('class')
+        .replace('node-element', '')
+        .replace('node-faded', '')
+        .replace('node-lazy', '')
+        .replace('node-search', '');
+
       const nodeClasses = [classNames];
 
       if (node.data.isActive) {
         nodeClasses.push('node-element');
-      } else if (node.data.isLazy) {
-        nodeClasses.push('node-lazy');
-      } else {
-        nodeClasses.push('node-environment');
       }
 
       if (this.searchMatches.has(node.data)) {
