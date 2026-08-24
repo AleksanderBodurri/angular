@@ -88,7 +88,8 @@ export class DirectiveForestComponent {
 
   readonly selectedNode = signal<FlatNode | null>(null);
   readonly highlightIdInTreeFromElement = signal<number | null>(null);
-  readonly matchedNodes = signal<Map<number, NodeTextMatch[]>>(new Map()); // Node index, NodeTextMatch
+  readonly matchedNodes = signal<Map<string, NodeTextMatch[]>>(new Map()); // Node ID, NodeTextMatch
+  readonly matchedNodeList = signal<FlatNode[]>([]);
   readonly matchesCount = computed(() => this.matchedNodes().size);
   readonly currentlyMatchedIndex = signal<number>(-1);
   protected readonly selectedNodeIdx = computed(() => {
@@ -285,7 +286,8 @@ export class DirectiveForestComponent {
 
   handleFilter(filterFn: FilterFn): void {
     this.currentlyMatchedIndex.set(-1);
-    this.matchedNodes.set(new Map());
+    const matched = new Map<string, NodeTextMatch[]>();
+    const matchedList: FlatNode[] = [];
 
     for (let i = 0; i < this.dataSource.data.length; i++) {
       const node = this.dataSource.data[i];
@@ -293,13 +295,13 @@ export class DirectiveForestComponent {
       const matches = filterFn(fullName);
 
       if (matches.length) {
-        this.matchedNodes.update((matched) => {
-          const map = new Map(matched);
-          map.set(i, matches);
-          return map;
-        });
+        matched.set(node.id, matches);
+        matchedList.push(node);
       }
     }
+
+    this.matchedNodes.set(matched);
+    this.matchedNodeList.set(matchedList);
 
     // Select the first match, if there are any.
     if (this.matchesCount()) {
@@ -309,14 +311,15 @@ export class DirectiveForestComponent {
 
   navigateMatchedNode(dir: 'next' | 'prev') {
     const dirIdx = dir === 'next' ? 1 : -1;
-    const indexesOfMatchedNodes = Array.from(this.matchedNodes());
+    const matchedList = this.matchedNodeList();
+    if (matchedList.length === 0) {
+      return;
+    }
     const newMatchedIndex =
-      (this.currentlyMatchedIndex() + dirIdx + indexesOfMatchedNodes.length) %
-      indexesOfMatchedNodes.length;
+      (this.currentlyMatchedIndex() + dirIdx + matchedList.length) % matchedList.length;
 
-    const [nodeIdxToSelect] = indexesOfMatchedNodes[newMatchedIndex];
-    const nodeToSelect = this.dataSource.data[nodeIdxToSelect];
-    if (nodeIdxToSelect !== undefined) {
+    const nodeToSelect = matchedList[newMatchedIndex];
+    if (nodeToSelect !== undefined) {
       this.treeControl.expand(nodeToSelect);
       this.selectAndEnsureVisible(nodeToSelect);
 
