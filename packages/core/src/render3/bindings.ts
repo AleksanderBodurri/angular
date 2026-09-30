@@ -9,6 +9,7 @@
 import {assertIndexInRange, assertLessThan, assertNotSame} from '../util/assert';
 import {devModeEqual} from '../util/comparison';
 
+import {activeEventLog} from './debug/event_log_hooks';
 import {getExpressionChangedErrorDetails, throwErrorIfNoChangesMode} from './errors';
 import {LView} from './interfaces/view';
 import {isInCheckNoChangesMode} from './state';
@@ -80,6 +81,7 @@ export function bindingUpdated(lView: LView, bindingIndex: number, value: any): 
       return false;
     }
     lView[bindingIndex] = value;
+    ngDevMode && activeEventLog !== null && activeEventLog.onBindingChanged(lView);
     return true;
   }
 }

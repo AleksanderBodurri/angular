@@ -24,6 +24,7 @@ import {NgZone, NgZonePrivate, NoopNgZone, angularZoneInstanceIdProperty} from '
 import {TracingService} from '../../application/tracing';
 import {Service} from '../../di';
 import {INTERNAL_APPLICATION_ERROR_HANDLER} from '../../error_handler';
+import {activeEventLog} from '../../render3/debug/event_log_hooks';
 import {OnDestroy} from '../lifecycle_hooks';
 import {
   ChangeDetectionScheduler,
@@ -136,6 +137,8 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler, O
   }
 
   notify(source: NotificationSource): void {
+    ngDevMode && activeEventLog !== null && activeEventLog.onNotify(source);
+
     if (!this.zonelessEnabled && source === NotificationSource.Listener) {
       // When the notification comes from a listener, we skip the notification unless the
       // application has enabled zoneless. Ideally, listeners wouldn't notify the scheduler at all

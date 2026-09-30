@@ -51,6 +51,7 @@ import {
   getTDeferBlockDetails,
   getTemplateIndexForState,
 } from './utils';
+import {activeEventLog} from '../render3/debug/event_log_hooks';
 import {profiler} from '../render3/profiler';
 import {ProfilerEvent} from '../../primitives/devtools';
 import {addLViewToLContainer, removeLViewFromLContainer} from '../render3/view/container';
@@ -247,6 +248,9 @@ function applyDeferBlockState(
   const stateTmplIndex = getTemplateIndexForState(newState, hostLView, tNode);
 
   if (stateTmplIndex !== null) {
+    ngDevMode &&
+      activeEventLog !== null &&
+      activeEventLog.onDeferStateChange(hostLView, lDetails[DEFER_BLOCK_STATE], newState);
     lDetails[DEFER_BLOCK_STATE] = newState;
     const hostTView = hostLView[TVIEW];
     const adjustedIndex = stateTmplIndex + HEADER_OFFSET;

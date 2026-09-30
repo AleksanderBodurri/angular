@@ -65,6 +65,39 @@ describe('view_traversal_utils', () => {
       expect(values).toContain('child-comp');
     });
 
+    it('should not mistake a `@let` value for a container', async () => {
+      @Component({
+        selector: 'child-comp',
+        template: '<b>Child</b>',
+      })
+      class ChildComponent {}
+
+      // A `@let` stores its value in the slot of its `TNode`, but only when it is read from an
+      // embedded view. An array shaped like an `LContainer` (`true` at index 1) must not be
+      // walked as one.
+      @Component({
+        selector: 'test-comp',
+        template: `
+          @let flags =
+            [false, true, false, false, false, false, false, false, false, false, false, false];
+          @if (true) {
+            <p>{{ flags.length }}</p>
+            <child-comp></child-comp>
+          }
+        `,
+        imports: [ChildComponent],
+      })
+      class TestComponent {}
+
+      const fixture = TestBed.createComponent(TestComponent);
+      await fixture.whenStable();
+
+      const lView = getLContext(fixture.nativeElement)!.lView!;
+      const values = Array.from(walkLViewDirectives(lView)).map(([node]) => node.value);
+
+      expect(values).toContain('child-comp');
+    });
+
     it('should handle content projection', async () => {
       @Component({
         selector: 'projected-comp',

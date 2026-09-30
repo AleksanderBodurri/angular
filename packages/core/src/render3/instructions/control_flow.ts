@@ -37,6 +37,7 @@ import {
 import {LiveCollection, reconcile} from '../list_reconciliation';
 import {destroyLView} from '../node_manipulation';
 import {getLView, getSelectedIndex, getTView, nextBindingIndex} from '../state';
+import {activeEventLog} from '../debug/event_log_hooks';
 import {NO_CHANGE} from '../tokens';
 import {getConstant, getTNode} from '../util/view_utils';
 import {createAndRenderEmbeddedLView, shouldAddViewToDom} from '../view_manipulation';
@@ -524,6 +525,18 @@ export function ɵɵrepeater(collection: Iterable<unknown> | undefined | null): 
 
     const liveCollection = metadata.liveCollection;
     reconcile(liveCollection, collection, metadata.trackByFn, prevConsumer);
+    if (ngDevMode && activeEventLog !== null && liveCollection.operationsCounter !== undefined) {
+      const counter = liveCollection.operationsCounter;
+      if (counter.created > 0 || counter.destroyed > 0) {
+        activeEventLog.onForRowsChanged(
+          hostLView,
+          counter.created,
+          counter.destroyed,
+          counter.wasReCreated(liveCollection.length),
+          liveCollection.length,
+        );
+      }
+    }
 
     // Warn developers about situations where the entire collection was re-created as part of the
     // reconciliation pass. Note that this warning might be "overreacting" and report cases where

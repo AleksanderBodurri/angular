@@ -8,14 +8,15 @@
 
 import {getLContext} from '../../render3/context_discovery';
 import {NodeInjector} from '../../render3/di';
+import {LContainer} from '../../render3/interfaces/container';
 import {TDirectiveHostNode, TNode} from '../../render3/interfaces/node';
-import {INJECTOR, LView, T_HOST, TVIEW, TViewType} from '../../render3/interfaces/view';
+import {isLContainer} from '../../render3/interfaces/type_checks';
+import {INJECTOR, LView, PARENT, T_HOST, TVIEW, TViewType} from '../../render3/interfaces/view';
 import {DiGraph, SerializedInjector, serializeInjector} from './serialized_di_graph';
 import {ChainedInjector} from '../../render3/chained_injector';
 import {Injector} from '../../di/injector';
 import {ToolDefinition} from '../../../primitives/devtools';
 import {walkLViewDirectives} from './traversal';
-import {getLViewParent} from '../../render3/util/view_utils';
 import {R3Injector} from '../../di/r3_injector';
 import {NullInjector} from '../../di/null_injector';
 
@@ -115,7 +116,9 @@ function walkElementInjectors(rootLView: LView): SerializedInjector {
     while (stack.length > 0) {
       const [lastTNode, lastLView, lastInjector] = stack[stack.length - 1];
 
-      const isDescendantInSameView = isTNodeDescendant(tNode, lastTNode);
+      // `tNode.parent` is only meaningful within a single `LView`. Embedded views stamped from
+      // the same template (e.g. `@for` rows) share `TNode`s, so the `LView`s must match too.
+      const isDescendantInSameView = lView === lastLView && isTNodeDescendant(tNode, lastTNode);
       const isDescendantInDifferentView = isLViewDescendantOfTNode(lView, lastLView, lastTNode);
       if (isDescendantInSameView || isDescendantInDifferentView) {
         // This injector is a child of the current last injector in the stack.
@@ -229,15 +232,27 @@ function isTNodeDescendant(node: TNode, ancestor: TNode): boolean {
  * outside.
  *
  * To solve this, we use the `LView` hierarchy to find if the current view is a descendant of the
- * `parentLView`.
+ * `parentLView`. A view inserted into an `LContainer` is a logical child of the container's anchor
+ * `TNode`, which is how `walkLViewChildren` visits it, so that is the `TNode` we use rather than
+ * the view's own `T_HOST`. `T_HOST` is only rewritten to the anchor when the view is added to the
+ * DOM, so it is stale for views which are not (e.g. views claimed during hydration, or containers
+ * whose anchor has no parent node because its content is never projected): it still refers to the
+ * declaration `<ng-template>` of an embedded view, or is `null` for a view created by
+ * `ViewContainerRef.createComponent`.
  */
 function isLViewDescendantOfTNode(lView: LView, parentLView: LView, parentTNode: TNode): boolean {
   let currentLView: LView | null = lView;
   let hostTNode: TNode | null = null;
 
   while (currentLView && currentLView !== parentLView) {
-    hostTNode = currentLView[T_HOST];
-    currentLView = getLViewParent(currentLView);
+    const parent: LView | LContainer | null = currentLView[PARENT];
+    if (isLContainer(parent)) {
+      hostTNode = parent[T_HOST];
+      currentLView = parent[PARENT];
+    } else {
+      hostTNode = currentLView[T_HOST];
+      currentLView = parent;
+    }
   }
 
   return (

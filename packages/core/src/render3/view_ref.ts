@@ -19,6 +19,7 @@ import {removeFromArray} from '../util/array_utils';
 import {assertEqual} from '../util/assert';
 
 import {collectNativeNodes} from './collect_native_nodes';
+import {activeEventLog} from './debug/event_log_hooks';
 import {checkNoChangesInternal, detectChangesInternal} from './instructions/change_detection';
 import {markViewDirty} from './instructions/mark_view_dirty';
 import {CONTAINER_HEADER_OFFSET, VIEW_REFS} from './interfaces/container';
@@ -305,13 +306,20 @@ export class ViewRef<T> implements EmbeddedViewRef<T>, ChangeDetectorRef {
    * See {@link ChangeDetectorRef#detach} for more information.
    */
   detectChanges(): void {
-    // Add `RefreshView` flag to ensure this view is refreshed if not already dirty.
-    // `RefreshView` flag is used intentionally over `Dirty` because it gets cleared before
-    // executing any of the actual refresh code while the `Dirty` flag doesn't get cleared
-    // until the end of the refresh. Using `RefreshView` prevents creating a potential difference
-    // in the state of the LViewFlags during template execution.
-    this._lView[FLAGS] |= LViewFlags.RefreshView;
-    detectChangesInternal(this._lView);
+    // The log told that this run started is the one told that it ended.
+    const log = ngDevMode ? activeEventLog : null;
+    try {
+      ngDevMode && log !== null && log.onManualDetectChangesStart();
+      // Add `RefreshView` flag to ensure this view is refreshed if not already dirty.
+      // `RefreshView` flag is used intentionally over `Dirty` because it gets cleared before
+      // executing any of the actual refresh code while the `Dirty` flag doesn't get cleared
+      // until the end of the refresh. Using `RefreshView` prevents creating a potential difference
+      // in the state of the LViewFlags during template execution.
+      this._lView[FLAGS] |= LViewFlags.RefreshView;
+      detectChangesInternal(this._lView);
+    } finally {
+      ngDevMode && log !== null && log.onManualDetectChangesEnd();
+    }
   }
 
   /**

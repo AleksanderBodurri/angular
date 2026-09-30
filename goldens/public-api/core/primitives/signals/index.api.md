@@ -188,6 +188,9 @@ export function setPostProducerCreatedFn(fn: ReactiveHookFn | null): ReactiveHoo
 // @public (undocumented)
 export function setPostSignalSetFn(fn: ReactiveHookFn | null): ReactiveHookFn | null;
 
+// @public
+export function setPreSignalSetFn(fn: SignalSetHookFn | null): SignalSetHookFn | null;
+
 // @public (undocumented)
 export function setThrowInvalidWriteToSignalError(fn: <T>(node: SignalNode<T>) => never): void;
 
@@ -216,6 +219,9 @@ export interface SignalNode<T> extends ReactiveNode {
 
 // @public (undocumented)
 export function signalSetFn<T>(node: SignalNode<T>, newValue: T): void;
+
+// @public
+export type SignalSetHookFn = (node: SignalNode<any>, newValue: unknown, changed: boolean) => void;
 
 // @public (undocumented)
 export function signalUpdateFn<T>(node: SignalNode<T>, updater: (value: T) => T): void;

@@ -30,7 +30,7 @@ export function createOutputListener(
   eventName: string,
 ) {
   // TODO(pk): decouple checks from the actual binding
-  const wrappedListener = wrapListener(tNode, lView, listenerFn);
+  const wrappedListener = wrapListener(tNode, lView, listenerFn, eventName);
   const hasBound = listenToDirectiveOutput(tNode, lView, targetDef, eventName, wrappedListener);
 
   if (!hasBound && ngDevMode) {

@@ -9,6 +9,7 @@
 import {setActiveConsumer} from '@angular/core/primitives/signals';
 
 import {NotificationSource} from '../../change_detection/scheduling/zoneless_scheduling';
+import {activeEventLog} from '../debug/event_log_hooks';
 import type {TNode} from '../interfaces/node';
 import {isComponentHost, isDirectiveHost} from '../interfaces/type_checks';
 import {CLEANUP, CONTEXT, type LView, type TView} from '../interfaces/view';
@@ -40,6 +41,7 @@ import {
  * @param tNode The TNode associated with this listener
  * @param lView The LView that contains this listener
  * @param listenerFn The listener function to call
+ * @param eventName Name of the DOM event or output the listener is registered for
  * @param wrapWithPreventDefault Whether or not to prevent default behavior
  * (the procedural renderer does this already, so in those cases, we should skip)
  */
@@ -47,6 +49,7 @@ export function wrapListener(
   tNode: TNode,
   lView: LView,
   listenerFn: EventCallback,
+  eventName: string,
 ): WrappedEventCallback {
   // Note: we are performing most of the work in the listener function itself
   // to optimize listener registration.
@@ -62,20 +65,27 @@ export function wrapListener(
     // In order to be backwards compatible with View Engine, events on component host nodes
     // must also mark the component view itself dirty (i.e. the view that it owns).
     const startView = isComponentHost(tNode) ? getComponentLViewByIndex(tNode.index, lView) : lView;
+    // The log told that this listener started is the one told that it ended.
+    const log = ngDevMode ? activeEventLog : null;
+    ngDevMode && log !== null && log.onListener(lView, tNode, eventName);
     markViewDirty(startView, NotificationSource.Listener);
 
     const context = lView[CONTEXT];
-    let result = executeListenerWithErrorHandling(lView, context, listenerFn, event);
-    // A just-invoked listener function might have coalesced listeners so we need to check for
-    // their presence and invoke as needed.
-    let nextListenerFn = (<any>wrapListenerIn_markDirtyAndPreventDefault).__ngNextListenerFn__;
-    while (nextListenerFn) {
-      // We should prevent default if any of the listeners explicitly return false
-      result = executeListenerWithErrorHandling(lView, context, nextListenerFn, event) && result;
-      nextListenerFn = (<any>nextListenerFn).__ngNextListenerFn__;
-    }
+    try {
+      let result = executeListenerWithErrorHandling(lView, context, listenerFn, event);
+      // A just-invoked listener function might have coalesced listeners so we need to check for
+      // their presence and invoke as needed.
+      let nextListenerFn = (<any>wrapListenerIn_markDirtyAndPreventDefault).__ngNextListenerFn__;
+      while (nextListenerFn) {
+        // We should prevent default if any of the listeners explicitly return false
+        result = executeListenerWithErrorHandling(lView, context, nextListenerFn, event) && result;
+        nextListenerFn = (<any>nextListenerFn).__ngNextListenerFn__;
+      }
 
-    return result;
+      return result;
+    } finally {
+      ngDevMode && log !== null && log.onListenerEnd();
+    }
   } as WrappedEventCallback;
 }
 

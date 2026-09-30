@@ -8,6 +8,8 @@
 
 import {diGraphTool} from './di_graph';
 import {signalGraphTool} from './signal_graph';
+import {appStabilityTool} from './app_stability';
+import {eventBufferSizeTool, eventsTool} from './event_log_tools';
 import {DevtoolsToolDiscoveryEvent} from '../../../primitives/devtools';
 
 /**
@@ -27,7 +29,7 @@ export function registerAiTools(): () => void {
     const event = inputEvent as DevtoolsToolDiscoveryEvent;
     event.respondWith({
       name: 'Angular',
-      tools: [diGraphTool, signalGraphTool],
+      tools: [diGraphTool, signalGraphTool, appStabilityTool, eventsTool, eventBufferSizeTool],
     });
   }
 

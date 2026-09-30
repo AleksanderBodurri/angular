@@ -86,6 +86,7 @@ import {
   ID,
 } from './interfaces/view';
 import {assertTNodeType} from './node_assert';
+import {activeEventLog} from './debug/event_log_hooks';
 import {profiler} from './profiler';
 import {ProfilerEvent} from '../../primitives/devtools';
 import {getLViewParent, getNativeByTNode, unwrapRNode} from './util/view_utils';
@@ -352,6 +353,7 @@ function cleanUpView(tView: TView, lView: LView): void {
     // This also aligns with the ViewEngine behavior. It also means that the onDestroy hook is
     // really more of an "afterDestroy" hook if you think about it.
     lView[FLAGS] |= LViewFlags.Destroyed;
+    ngDevMode && activeEventLog !== null && activeEventLog.onComponentDestroyed(lView);
 
     lView[REACTIVE_TEMPLATE_CONSUMER] && consumerDestroy(lView[REACTIVE_TEMPLATE_CONSUMER]);
 

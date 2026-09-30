@@ -10,7 +10,7 @@ import {assertDefined} from '../../util/assert';
 import {assertLView} from '../assert';
 import {readPatchedLView} from '../context_discovery';
 import {CONTAINER_HEADER_OFFSET, LContainer} from '../interfaces/container';
-import {TNode} from '../interfaces/node';
+import {TNode, TNodeType} from '../interfaces/node';
 import {isLContainer, isLView, isRootView} from '../interfaces/type_checks';
 import {CHILD_HEAD, CONTEXT, LView, NEXT, TVIEW} from '../interfaces/view';
 
@@ -95,9 +95,11 @@ function* walkLViewChildren(tNode: TNode, lView: LView): IterableIterator<[TNode
     }
   }
 
-  // If this is a container (like `@if`), visit its embedded views.
+  // If this is a container (like `@if`) or an element with a `ViewContainerRef`, visit its embedded
+  // views. Other node types can store arbitrary values in their slot (e.g. `@let`), which must not
+  // be mistaken for an `LContainer`.
   const slot = lView[tNode.index];
-  if (isLContainer(slot)) {
+  if (tNode.type & (TNodeType.AnyContainer | TNodeType.Element) && isLContainer(slot)) {
     for (let i = CONTAINER_HEADER_OFFSET; i < slot.length; i++) {
       const embeddedLView = slot[i] as LView;
       const embeddedTView = embeddedLView[TVIEW];

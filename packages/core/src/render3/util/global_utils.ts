@@ -10,6 +10,7 @@
 
 import {assertDefined} from '../../util/assert';
 import {global} from '../../util/global';
+import {installEventLog} from '../../debug/ai/event_log';
 import {setupFrameworkInjectorProfiler} from '../debug/framework_injector_profiler';
 import {setProfiler} from '../profiler';
 import {Signal, isSignal} from '../reactivity/api';
@@ -193,6 +194,12 @@ export function publishDefaultGlobalUtils() {
     for (const [methodName, method] of Object.entries(internalCoreGlobalUtils)) {
       publishGlobalUtil(methodName as keyof InternalCoreGlobalUtils, method);
     }
+  }
+
+  if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+    // Not only the first time, so that a log removed by a test is installed again. What runs
+    // before Angular starts is not recorded.
+    installEventLog();
   }
 }
 

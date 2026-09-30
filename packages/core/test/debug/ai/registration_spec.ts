@@ -6,7 +6,10 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {appStabilityTool} from '../../../src/debug/ai/app_stability';
+import {diGraphTool} from '../../../src/debug/ai/di_graph';
 import {signalGraphTool} from '../../../src/debug/ai/signal_graph';
+import {eventBufferSizeTool, eventsTool} from '../../../src/debug/ai/event_log_tools';
 import {registerAiTools} from '../../../src/debug/ai';
 import {DevtoolsToolDiscoveryEvent} from '../../../primitives/devtools';
 import {destroyPlatform} from '../../../src/core';
@@ -30,9 +33,7 @@ describe('registration', () => {
         window.dispatchEvent(event);
         expect(event.respondWith).toHaveBeenCalledOnceWith({
           name: 'Angular',
-
-          // Just check one tool.
-          tools: jasmine.arrayContaining([signalGraphTool]),
+          tools: [diGraphTool, signalGraphTool, appStabilityTool, eventsTool, eventBufferSizeTool],
         });
       } finally {
         unregister();

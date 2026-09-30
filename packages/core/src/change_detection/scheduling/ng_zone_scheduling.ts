@@ -25,6 +25,7 @@ import {NgZone} from '../../zone';
 import {InternalNgZoneOptions} from '../../zone/ng_zone';
 
 import {INTERNAL_APPLICATION_ERROR_HANDLER} from '../../error_handler';
+import {activeEventLog} from '../../render3/debug/event_log_hooks';
 import {OnDestroy} from '../lifecycle_hooks';
 import {SCHEDULE_IN_ROOT_ZONE_DEFAULT} from './flags';
 import {
@@ -55,6 +56,9 @@ export class NgZoneChangeDetectionScheduler implements OnDestroy {
         if (this.changeDetectionScheduler.runningTick) {
           return;
         }
+        ngDevMode &&
+          activeEventLog !== null &&
+          activeEventLog.onZoneTick(typeof Zone !== 'undefined' ? Zone.currentTask : null);
         this.zone.run(() => {
           try {
             this.applicationRef.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeGlobal;

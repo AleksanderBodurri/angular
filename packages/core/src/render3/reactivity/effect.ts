@@ -31,6 +31,7 @@ import {assertNotInReactiveContext} from './asserts';
 import {EffectScheduler, SchedulableEffect} from './root_effect_scheduler';
 
 import {emitEffectCreatedEvent, setInjectorProfilerContext} from '../debug/injector_profiler';
+import {activeEventLog} from '../debug/event_log_hooks';
 
 /**
  * A global reactive effect, which can be manually destroyed.
@@ -337,6 +338,14 @@ export function createRootEffect(
 
 function createEffectFn(node: EffectNode, fn: (onCleanup: EffectCleanupRegisterFn) => void) {
   return () => {
-    fn((cleanupFn) => (node.cleanupFns ??= []).push(cleanupFn));
+    // The log told that this run started is the one told that it ended. `runEffect` has counted
+    // this run in `version` already, so the first run sees 1.
+    const log = ngDevMode ? activeEventLog : null;
+    ngDevMode && log !== null && log.onEffectStart(node, node.version === 1);
+    try {
+      fn((cleanupFn) => (node.cleanupFns ??= []).push(cleanupFn));
+    } finally {
+      ngDevMode && log !== null && log.onEffectEnd(node);
+    }
   };
 }

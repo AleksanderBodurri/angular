@@ -15,6 +15,7 @@ import {EnvironmentInjector} from './di/r3_injector';
 import {DOCUMENT} from './document';
 import {RuntimeError, RuntimeErrorCode} from './errors';
 import {DestroyRef} from './linker/destroy_ref';
+import {activeEventLog} from './render3/debug/event_log_hooks';
 import {NgZone} from './zone/ng_zone';
 
 import {Type} from './interface/type';
@@ -153,6 +154,7 @@ export const INTERNAL_APPLICATION_ERROR_HANDLER = new InjectionToken<(e: any) =>
       const injector = inject(EnvironmentInjector);
       let userErrorHandler: ErrorHandler;
       return (e: unknown) => {
+        ngDevMode && activeEventLog !== null && activeEventLog.onError(e);
         zone.runOutsideAngular(() => {
           if (injector.destroyed && !userErrorHandler) {
             setTimeout(() => {

@@ -11,6 +11,7 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {ɵɵdefineInjectable} from './di/interface/defs';
 import {OnDestroy} from './change_detection/lifecycle_hooks';
 import {DEBUG_TASK_TRACKER} from './application/stability_debug';
+import {activeEventLog} from './render3/debug/event_log_hooks';
 import {inject} from './di';
 
 /**
@@ -53,6 +54,9 @@ export class PendingTasksInternal implements OnDestroy {
     const taskId = this.taskId++;
     this.pendingTasks.add(taskId);
     this.debugTaskTracker?.add(taskId);
+    ngDevMode &&
+      activeEventLog !== null &&
+      activeEventLog.onPendingTaskAdded(this, taskId, this.pendingTasks.size === 1);
     return taskId;
   }
 
@@ -63,6 +67,9 @@ export class PendingTasksInternal implements OnDestroy {
   remove(taskId: number): void {
     this.pendingTasks.delete(taskId);
     this.debugTaskTracker?.remove(taskId);
+    ngDevMode &&
+      activeEventLog !== null &&
+      activeEventLog.onPendingTaskRemoved(this, taskId, this.pendingTasks.size === 0);
     if (this.pendingTasks.size === 0 && this.hasPendingTasks) {
       this.pendingTask.next(false);
     }

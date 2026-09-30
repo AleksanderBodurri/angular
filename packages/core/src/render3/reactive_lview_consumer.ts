@@ -8,6 +8,7 @@
 
 import {REACTIVE_NODE, ReactiveNode} from '../../primitives/signals';
 
+import {activeEventLog} from './debug/event_log_hooks';
 import {LView, REACTIVE_TEMPLATE_CONSUMER, TVIEW, TView, TViewType} from './interfaces/view';
 import {getLViewParent, markAncestorsForTraversal, markViewForRefresh} from './util/view_utils';
 
@@ -45,6 +46,7 @@ export const REACTIVE_LVIEW_CONSUMER_NODE: Omit<ReactiveLViewConsumer, 'lView'> 
   consumerIsAlwaysLive: true,
   kind: 'template',
   consumerMarkedDirty: (node: ReactiveLViewConsumer) => {
+    ngDevMode && activeEventLog !== null && activeEventLog.onSignalMarkedView(node.lView!);
     markAncestorsForTraversal(node.lView!);
   },
   consumerOnSignalRead(this: ReactiveLViewConsumer): void {

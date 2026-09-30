@@ -12,12 +12,15 @@ import {
   createEnvironmentInjector,
   destroyPlatform,
   Directive,
+  inject,
   Injectable,
   InjectionToken,
+  ViewContainerRef,
 } from '@angular/core';
 import {bootstrapApplication, createApplication} from '@angular/platform-browser';
 import {withBody} from '@angular/private/testing';
 import {diGraphTool} from '../../src/debug/ai/di_graph';
+import {SerializedInjector} from '../../src/debug/ai/serialized_di_graph';
 import {setupFrameworkInjectorProfiler} from '../../src/render3/debug/framework_injector_profiler';
 
 describe('diGraphTool', () => {
@@ -639,6 +642,141 @@ describe('diGraphTool', () => {
 
         // TestComponent should have two children
         expect(result.elementInjectorRoots[0].children.length).toBe(2);
+      } finally {
+        appRef.destroy();
+      }
+    }),
+  );
+
+  it(
+    'should keep repeated embedded views (`@for`) as siblings',
+    withBody('<test-cmp></test-cmp>', async () => {
+      @Directive({selector: '[child-dir]'})
+      class ChildDir {}
+
+      @Component({
+        selector: 'test-cmp',
+        template: '@for (item of items; track item) { <div child-dir></div> }',
+        imports: [ChildDir],
+      })
+      class TestCmp {
+        items = [1, 2, 3];
+      }
+
+      const appRef = await bootstrapApplication(TestCmp);
+      try {
+        const result = await diGraphTool.execute({});
+
+        const [root] = result.elementInjectorRoots;
+        expect(root.children.length).toBe(3);
+        for (const child of root.children) {
+          expect(child.children).toEqual([]);
+        }
+      } finally {
+        appRef.destroy();
+      }
+    }),
+  );
+
+  it(
+    'should keep repeated embedded views (`@for`) as siblings when rows have nested directives',
+    withBody('<test-cmp></test-cmp>', async () => {
+      @Directive({selector: '[grand-dir]'})
+      class GrandDir {}
+
+      @Directive({selector: '[child-dir]'})
+      class ChildDir {}
+
+      @Component({
+        selector: 'test-cmp',
+        template:
+          '@for (item of items; track item) { <div child-dir><span grand-dir></span></div> }',
+        imports: [ChildDir, GrandDir],
+      })
+      class TestCmp {
+        items = [1, 2, 3];
+      }
+
+      const appRef = await bootstrapApplication(TestCmp);
+      try {
+        const result = await diGraphTool.execute({});
+
+        const [root] = result.elementInjectorRoots;
+        expect(root.children.length).toBe(3);
+        for (const row of root.children) {
+          expect(row.children.length).toBe(1);
+          expect(row.children[0].children).toEqual([]);
+        }
+      } finally {
+        appRef.destroy();
+      }
+    }),
+  );
+
+  it(
+    'should keep views in a container that was not added to the DOM under their anchor',
+    withBody('<test-cmp></test-cmp>', async () => {
+      @Component({selector: 'leaf-cmp', template: ''})
+      class LeafCmp {}
+
+      @Component({selector: 'mid-cmp', template: '<leaf-cmp></leaf-cmp>', imports: [LeafCmp]})
+      class MidCmp {}
+
+      @Directive({selector: '[outlet]'})
+      class OutletDir {
+        private vcr = inject(ViewContainerRef);
+
+        ngOnInit() {
+          this.vcr.createComponent(MidCmp);
+        }
+      }
+
+      // Without an `<ng-content>`, the content below is created but never attached to the DOM, so
+      // the anchor of the container has no parent node and the created view is not added to the DOM.
+      @Component({selector: 'hidden-cmp', template: '<leaf-cmp></leaf-cmp>', imports: [LeafCmp]})
+      class HiddenCmp {}
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          <hidden-cmp>
+            <ng-container outlet></ng-container>
+            <mid-cmp></mid-cmp>
+          </hidden-cmp>
+        `,
+        imports: [HiddenCmp, OutletDir, MidCmp],
+      })
+      class TestCmp {}
+
+      interface NamedInjector {
+        name: string;
+        children: NamedInjector[];
+      }
+
+      // Name each element injector after the node it is on.
+      function nameTree(injector: SerializedInjector): NamedInjector {
+        return {
+          name: injector.type === 'element' ? injector.hostElement.nodeName.toLowerCase() : '',
+          children: injector.children.map(nameTree),
+        };
+      }
+
+      const appRef = await bootstrapApplication(TestCmp);
+      try {
+        const result = await diGraphTool.execute({});
+
+        // The created `MidCmp` stays under the anchor of its container (the comment of the
+        // `<ng-container>`) and keeps its own `LeafCmp`, and all hosts stay under `HiddenCmp`.
+        const leaf: NamedInjector = {name: 'leaf-cmp', children: []};
+        const mid: NamedInjector = {name: 'mid-cmp', children: [leaf]};
+        expect(result.elementInjectorRoots.map(nameTree)).toEqual([
+          {
+            name: 'test-cmp',
+            children: [
+              {name: 'hidden-cmp', children: [{name: '#comment', children: [mid]}, mid, leaf]},
+            ],
+          },
+        ]);
       } finally {
         appRef.destroy();
       }

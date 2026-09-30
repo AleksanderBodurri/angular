@@ -112,7 +112,7 @@ export function ɵɵdomListener(
       lView[RENDERER],
       eventName,
       listenerFn,
-      wrapListener(tNode, lView, listenerFn),
+      wrapListener(tNode, lView, listenerFn, eventName),
     );
   }
 
@@ -138,7 +138,7 @@ export function listenerInternal(
   // - The event target has a resolver (usually resulting in a global object,
   //   such as `window` or `document`).
   if (tNode.type & TNodeType.AnyRNode || eventTargetResolver) {
-    wrappedListener ??= wrapListener(tNode, lView, listenerFn);
+    wrappedListener ??= wrapListener(tNode, lView, listenerFn, eventName);
     const hasCoalescedDomEvent = listenToDomEvent(
       tNode,
       tView,
@@ -164,14 +164,14 @@ export function listenerInternal(
       for (let i = 0; i < hostDirectiveOutputConfig.length; i += 2) {
         const index = hostDirectiveOutputConfig[i] as number;
         const lookupName = hostDirectiveOutputConfig[i + 1] as string;
-        wrappedListener ??= wrapListener(tNode, lView, listenerFn);
+        wrappedListener ??= wrapListener(tNode, lView, listenerFn, eventName);
         listenToOutput(tNode, lView, index, lookupName, eventName, wrappedListener);
       }
     }
 
     if (outputConfig && outputConfig.length) {
       for (const index of outputConfig) {
-        wrappedListener ??= wrapListener(tNode, lView, listenerFn);
+        wrappedListener ??= wrapListener(tNode, lView, listenerFn, eventName);
         listenToOutput(tNode, lView, index, eventName, eventName, wrappedListener);
       }
     }

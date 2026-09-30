@@ -32,6 +32,17 @@ declare const ngDevMode: boolean | undefined;
  */
 let postSignalSetFn: ReactiveHookFn | null = null;
 
+/**
+ * Called in dev mode for every write to a `WritableSignal`, before the signal is updated.
+ *
+ * `changed` tells whether the new value passed the equality check. When it did not, nothing else
+ * happens for the write, so this is the only place where such a write can be observed. The dev
+ * mode event log uses this hook to record every write, including the ones which change nothing.
+ */
+export type SignalSetHookFn = (node: SignalNode<any>, newValue: unknown, changed: boolean) => void;
+
+let preSignalSetFn: SignalSetHookFn | null = null;
+
 export interface SignalNode<T> extends ReactiveNode {
   value: T;
   equal: ValueEqualityFn<T>;
@@ -78,6 +89,16 @@ export function setPostSignalSetFn(fn: ReactiveHookFn | null): ReactiveHookFn | 
   return prev;
 }
 
+/**
+ * Sets the hook called for every write to a `WritableSignal`, or removes it with `null`. Returns
+ * the previous hook, so that a caller can chain it.
+ */
+export function setPreSignalSetFn(fn: SignalSetHookFn | null): SignalSetHookFn | null {
+  const prev = preSignalSetFn;
+  preSignalSetFn = fn;
+  return prev;
+}
+
 export function signalGetFn<T>(node: SignalNode<T>): T {
   producerAccessed(node);
   return node.value;
@@ -88,7 +109,11 @@ export function signalSetFn<T>(node: SignalNode<T>, newValue: T) {
     throwInvalidWriteToSignalError(node);
   }
 
-  if (!node.equal(node.value, newValue)) {
+  const changed = !node.equal(node.value, newValue);
+  if (typeof ngDevMode !== 'undefined' && ngDevMode && preSignalSetFn !== null) {
+    preSignalSetFn(node, newValue, changed);
+  }
+  if (changed) {
     node.value = newValue;
     signalValueChanged(node);
   }

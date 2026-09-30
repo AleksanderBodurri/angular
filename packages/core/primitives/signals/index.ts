@@ -55,6 +55,8 @@ export {
   createSignal,
   runPostSignalSetFn,
   setPostSignalSetFn,
+  setPreSignalSetFn,
+  SignalSetHookFn,
   signalGetFn,
   signalSetFn,
   signalUpdateFn,

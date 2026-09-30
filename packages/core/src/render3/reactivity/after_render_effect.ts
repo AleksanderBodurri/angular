@@ -35,6 +35,7 @@ import {
   AfterRenderManager,
   AfterRenderSequence,
 } from '../after_render/manager';
+import {activeEventLog} from '../debug/event_log_hooks';
 import {LView} from '../interfaces/view';
 import {ViewContext} from '../view_context';
 import {assertNotInReactiveContext} from './asserts';
@@ -150,6 +151,12 @@ const AFTER_RENDER_PHASE_EFFECT_NODE: Omit<
     }
     args.push(this.registerCleanupFn);
 
+    // The log told that this run started is the one told that it ended. It learns of the run
+    // before the reactive context is reset, while the producer links still hold what the last
+    // run read.
+    const log = ngDevMode ? activeEventLog : null;
+    ngDevMode && log !== null && log.onEffectStart(this, this.value === NOT_SET);
+
     // Call the user's callback in our reactive context.
     const prevConsumer = consumerBeforeComputation(this);
     let newValue;
@@ -157,6 +164,7 @@ const AFTER_RENDER_PHASE_EFFECT_NODE: Omit<
       newValue = this.userFn.apply(null, args as any);
     } finally {
       consumerAfterComputation(this, prevConsumer);
+      ngDevMode && log !== null && log.onEffectEnd(this);
     }
 
     if (this.value === NOT_SET || !this.equal(this.value, newValue)) {

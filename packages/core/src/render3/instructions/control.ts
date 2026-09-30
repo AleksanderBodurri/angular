@@ -128,7 +128,7 @@ class ControlDirectiveHostImpl implements ControlDirectiveHost {
       this.lView,
       directiveDef,
       outputName,
-      wrapListener(this.tNode, this.lView, callback),
+      wrapListener(this.tNode, this.lView, callback, outputName),
     );
   }
 
@@ -141,7 +141,7 @@ class ControlDirectiveHostImpl implements ControlDirectiveHost {
       this.lView,
       directiveDef,
       modelName,
-      wrapListener(this.tNode, this.lView, listener),
+      wrapListener(this.tNode, this.lView, listener, modelName),
     );
   }
 
@@ -154,7 +154,7 @@ class ControlDirectiveHostImpl implements ControlDirectiveHost {
       this.lView[RENDERER],
       eventName,
       listener,
-      wrapListener(this.tNode, this.lView, listener),
+      wrapListener(this.tNode, this.lView, listener, eventName),
     );
   }
 

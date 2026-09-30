@@ -36,6 +36,7 @@ import {RendererFactory2} from '../render/api';
 import {AfterRenderManager} from '../render3/after_render/manager';
 import {ComponentFactory} from '../render3/component_ref';
 import {getComponentDef, isStandalone} from '../render3/def_getters';
+import {activeEventLog} from '../render3/debug/event_log_hooks';
 import type {Binding, DirectiveWithBindings} from '../render3/dynamic_bindings';
 import {ChangeDetectionMode, detectChangesInternal} from '../render3/instructions/change_detection';
 import {profiler} from '../render3/profiler';
@@ -531,6 +532,8 @@ export class ApplicationRef {
    * detection pass during which all change detection must complete.
    */
   tick(): void {
+    ngDevMode && activeEventLog !== null && activeEventLog.onExplicitTick();
+
     if (!this.zonelessEnabled) {
       this.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeGlobal;
     }
